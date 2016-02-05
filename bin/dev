@@ -1,0 +1,2 @@
+#!/bin/bash
+babel src/ --watch -d dist & watchify app/index.js -o public/js/bundle.js -t [ babelify --presets [ es2015 react ] ] -v -d

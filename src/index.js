@@ -13,6 +13,7 @@ server.register([
   require('./plugin/cassandra'),
   require('./plugin/logger'),
   require('./plugin/hue'),
+  require('./plugin/spa'),
 ], (err) => {
   if (err) {
     log.error('Failed to load plugin: %s', err)

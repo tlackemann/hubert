@@ -17,6 +17,18 @@ This will start the application and a Cassandra instance.
 You can view the application by navigating to http://192.169.99.100:3000 (this
 might change slightly depending on your Docker installation.)
 
+### Creating Hue Bridge User
+
+In order to use this application, you'll need to register it with your Hue
+Bridge. This can easily be done by following the below steps:
+
+1. Press the 'link' button on your Hue Bridge
+2. Run `HUE_USER=my-cool-username npm run hue`
+3. Update `./config/default.json` with your new username
+
+A new user will automatically be created for you. Don't forget to update the
+config file, otherwise the application will not be able to communicate properly.
+
 ## Development
 
 The Docker container for this application runs [nodemon]() to reboot the instance

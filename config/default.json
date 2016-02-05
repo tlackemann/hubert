@@ -2,6 +2,9 @@
   "app": {
     "port": "3000"
   },
+  "hue": {
+    "username": "hue-app-user"
+  },
   "db": {
     "cassandra": {
       "hosts": [

@@ -5,8 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "hue": "./bin/install",
     "compile": "babel src/ -d dist",
-    "dev": "babel src/ --watch -d dist & watchify app/index.js -o public/js/bundle.js -t [ babelify --presets [ es2015 react ] ] -v -d",
+    "dev": "./bin/dev",
     "lint": "eslint .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -24,6 +25,7 @@
     "watchify": "^3.7.0"
   },
   "dependencies": {
+    "bluebird": "^3.2.1",
     "boom": "^3.1.2",
     "bunyan": "^1.5.1",
     "cassandra-driver": "^3.0.0",
