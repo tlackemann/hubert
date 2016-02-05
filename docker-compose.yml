@@ -1,0 +1,16 @@
+# Hue App
+app:
+  build: .
+  ports:
+    - "3000:3000"
+  links:
+    - cassandra
+  volumes:
+    - .:/usr/src/app
+  command: nodemon -L index.js
+
+# Cassandra Database
+cassandra:
+  build: cassandra/
+  expose:
+    - "9042"
