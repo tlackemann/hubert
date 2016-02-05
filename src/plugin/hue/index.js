@@ -1,7 +1,7 @@
 import config from 'config'
 import Promise from 'bluebird'
 import cassandra from 'cassandra-driver'
-import { map, fill } from 'lodash'
+import { clone, map, fill } from 'lodash'
 import log from './../../log'
 import hue from './../../hue'
 
@@ -25,13 +25,13 @@ let errCount = config.app.errorThreshold
 const handleError = (err) => {
   log.error('Something went terribly wrong: %s', err)
   if (errCount > 0) {
-    log.error('Will ignore %s more times ...', errCount)
+    log.error('Will ignore %s more times ...', errCount - 1)
     errCount--
   } else {
     // Cleanup and shutdown
     clearInterval(intervalGetLightState)
     log.error('Shutting down the application ...')
-    return process.exit(1)
+    process.exit(1)
   }
 }
 
@@ -39,7 +39,7 @@ const handleError = (err) => {
 const saveLightStates = (lights) => {
   const columns = [
     'light_id',
-    'on',
+    'state_on',
     'bri',
     'hue',
     'sat',
@@ -50,14 +50,16 @@ const saveLightStates = (lights) => {
     'alert',
     'colormode',
     'reachable',
-    'ts'
+    'name',
+    'ts',
   ]
+  const values = fill(clone(columns), '?')
 
   const queries = map(lights, (light) => {
     log.debug('Building query for light "%s"', light.name)
 
     return {
-      query: `INSERT INTO light_events (${columns.join(',')}) VALUES (${fill(columns, '?')})`,
+      query: `INSERT INTO light_events (${columns.join(',')}) VALUES (${values.join(',')})`,
       params: [
         light.uniqueid,
         light.state.on,
@@ -71,6 +73,7 @@ const saveLightStates = (lights) => {
         light.state.alert,
         light.state.colormode,
         light.state.reachable,
+        light.name,
         cassandra.types.TimeUuid.now(),
       ],
     }
@@ -79,18 +82,17 @@ const saveLightStates = (lights) => {
   // Save this stuff
   log.info('Preparing to save light states ...')
   log.debug('Queries: %s', queries.length)
-  return db.batch(
+  db.batch(
     queries,
     { prepare: true },
     (err) => {
       if (err) {
         log.error('Problem saving the light states')
-        return Promise.reject(err)
+        return handleError(err)
       }
       log.info('Successfully saved light states of %s lights', queries.length)
       // If we had errors we can clear them again
       errCount = config.app.errorThreshold
-      res(true)
     }
   )
 }
@@ -135,9 +137,6 @@ exports.register = (server, options, next) => {
 
       // Start the interval
       intervalGetLightState = setInterval(getLightState, config.app.checkInterval)
-
-      // Get the light states right away also
-      getLightState()
 
       // Done, that's it
       next()

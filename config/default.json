@@ -1,7 +1,7 @@
 {
   "app": {
     "port": "3000",
-    "checkInterval": "60000",
+    "checkInterval": "30000",
     "errorThreshold": "5"
   },
   "hue": {

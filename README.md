@@ -29,6 +29,18 @@ Bridge. This can easily be done by following the below steps:
 A new user will automatically be created for you. Don't forget to update the
 config file, otherwise the application will not be able to communicate properly.
 
+### Seeding Cassandra Database
+
+In addition to creating a bridge user, you'll also need to seed a Cassandra
+instance with the `hue_app` schemas.
+
+To seed the Cassandra instance, ensure your application is running (using
+`docker-compose up`) and run the following:
+
+```
+docker run -it --link hueapp_cassandra_1:cassandra --rm hueapp_cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR" -f /docker/hue-app.cql'
+```
+
 ## Development
 
 The Docker container for this application runs [nodemon]() to reboot the instance
