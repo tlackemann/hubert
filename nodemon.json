@@ -3,7 +3,7 @@
     "NODE_ENV": "development"
   },
   "watch": [
-    "dist/"
+    "dist/**/*"
   ],
   "ext": "js json"
 }

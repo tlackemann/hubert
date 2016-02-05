@@ -26,6 +26,10 @@ const getDefaultBridge = () => {
   })
 }
 
+const getConnection = (ip, username) => {
+  return new HueApi(ip, username)
+}
+
 const registerUser = (ip, username) => {
   return new Promise((res, rej) => {
     const hpi = new HueApi();
@@ -42,6 +46,7 @@ const registerUser = (ip, username) => {
 }
 
 export default {
+  getConnection,
   getDefaultBridge,
   registerUser,
 }

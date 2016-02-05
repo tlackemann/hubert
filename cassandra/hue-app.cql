@@ -11,6 +11,18 @@ USE hue_app;
 -- Table: light_events
 CREATE COLUMNFAMILY light_events (
   light_id text,
+  on boolean,
+  bri integer,
+  hue integer,
+  sat integer,
+  effect text,
+  x float,
+  y float,
+  ct integer,
+  alert text,
+  colormode text,
+  reachable boolean,
+  name text,
   ts timeuuid,
   PRIMARY KEY(light_id, ts)
 );

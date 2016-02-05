@@ -10,7 +10,6 @@ server.connection({
 
 // Load our plugins
 server.register([
-  require('./plugin/cassandra'),
   require('./plugin/logger'),
   require('./plugin/hue'),
   require('./plugin/spa'),

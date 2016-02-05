@@ -1,9 +1,11 @@
 {
   "app": {
-    "port": "3000"
+    "port": "3000",
+    "checkInterval": "60000",
+    "errorThreshold": "5"
   },
   "hue": {
-    "username": "hue-app-user"
+    "username": "59acd3ee04378737288552274697ab"
   },
   "db": {
     "cassandra": {
