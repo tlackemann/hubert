@@ -41,6 +41,19 @@ To seed the Cassandra instance, ensure your application is running (using
 docker run -it --link hueapp_cassandra_1:cassandra --rm hueapp_cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR" -f /docker/hue-app.cql'
 ```
 
+## How It Works
+
+hu.lux automatically checks the status of your Hue lights every 30 or so seconds
+and records the information to a Cassandra database. A python daemon then reads
+the information and makes predictions on based on the current conditions.
+
+### Learning
+
+The first few weeks of data collection are to train the linear regression model.
+hu.lux does not start altering the state of your lights until enough data
+(currently 50,000 data points) has been collected and the rate of error is
+within an acceptable limit.
+
 ## Development
 
 The Docker container for this application runs [nodemon]() to reboot the instance
