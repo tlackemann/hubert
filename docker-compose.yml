@@ -20,5 +20,5 @@ ml:
   build: ml/
   links:
     - cassandra
-  # volumes:
-  #   - ./ml:/usr/src/app
+  volumes:
+    - ./ml:/usr/src/app
