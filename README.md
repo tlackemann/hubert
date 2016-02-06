@@ -1,6 +1,6 @@
 # hu.lux
 
-A web application to make the lights in your house smarter.
+A web application to make the [Hue](http://meethue.com) lights in your house smarter.
 
 ## Installation
 
@@ -55,7 +55,7 @@ To seed the Cassandra instance, ensure your application is running (using
 `docker-compose up`) and run the following:
 
 ```
-docker run -it --link hueapp_cassandra_1:cassandra --rm hueapp_cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR" -f /docker/hue-app.cql'
+docker run -it --link hulux_cassandra_1:cassandra --rm hulux_cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR" -f /docker/hue-app.cql'
 ```
 
 ## How It Works
