@@ -57,9 +57,10 @@ for light in lights:
     print clf.predict(9180)
 
     # If we have over 50,000 rows, we can probably do something useful
-    if (len(light_events.current_rows) >= 50000) {
+    if len(light_events.current_rows) >= 50000:
         # @todo - Actually modify the light to what the best prediction is
-    }
+        print '@todo'
+
 
 cluster.shutdown()
 print 'Done!'
