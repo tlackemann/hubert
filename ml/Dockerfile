@@ -15,13 +15,11 @@ RUN rm -rf /var/lib/apt/lists/*
 RUN curl -O https://bootstrap.pypa.io/get-pip.py && python get-pip.py && \
   rm get-pip.py
 
-# Install TensorFlow
-RUN pip --no-cache-dir install \
-  https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.6.0-cp27-none-linux_x86_64.whl
+# Install cassandra-driver
+RUN pip install cassandra-driver
 
-# Install machine learning packages
-RUN pip install git+git://github.com/tensorflow/skflow.git
-RUN pip install pandas
+# Install scikit-learn
+RUN pip install scikit-learn
 
 # Setup the application
 WORKDIR /usr/src/app
