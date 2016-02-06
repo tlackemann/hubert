@@ -21,6 +21,9 @@ RUN pip install cassandra-driver
 # Install scikit-learn
 RUN pip install scikit-learn
 
+# Install Hue package
+RUN pip install phue
+
 # Setup the application
 WORKDIR /usr/src/app
 RUN mkdir -p /usr/src/app

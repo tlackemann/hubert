@@ -8,6 +8,12 @@ CREATE KEYSPACE hue_app WITH replication =
 -- Use the keyspace
 USE hue_app;
 
+CREATE COLUMNFAMILY lights (
+  light_id text,
+  name text,
+  PRIMARY KEY(light_id)
+);
+
 -- Table: light_events
 CREATE COLUMNFAMILY light_events (
   light_id text,

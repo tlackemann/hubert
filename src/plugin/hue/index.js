@@ -1,7 +1,7 @@
 import config from 'config'
 import Promise from 'bluebird'
 import cassandra from 'cassandra-driver'
-import { clone, map, fill } from 'lodash'
+import { clone, map, fill, flatten } from 'lodash'
 import log from './../../log'
 import hue from './../../hue'
 
@@ -56,31 +56,40 @@ const saveLightStates = (lights) => {
   const values = fill(clone(columns), '?')
 
   const queries = map(lights, (light) => {
-    return {
-      query: `INSERT INTO light_events (${columns.join(',')}) VALUES (${values.join(',')})`,
-      params: [
-        light.uniqueid,
-        light.state.on,
-        light.state.bri,
-        light.state.hue,
-        light.state.sat,
-        light.state.effect,
-        light.state.xy[0],
-        light.state.xy[1],
-        light.state.ct,
-        light.state.alert,
-        light.state.colormode,
-        light.state.reachable,
-        light.name,
-        cassandra.types.TimeUuid.now(),
-      ],
-    }
+    return [
+      {
+        query: `INSERT INTO lights (light_id, name) VALUES (?, ?)`,
+        params: [
+          light.uniqueid,
+          light.name
+        ],
+      },
+      {
+        query: `INSERT INTO light_events (${columns.join(',')}) VALUES (${values.join(',')})`,
+        params: [
+          light.uniqueid,
+          light.state.on,
+          light.state.bri,
+          light.state.hue,
+          light.state.sat,
+          light.state.effect,
+          light.state.xy[0],
+          light.state.xy[1],
+          light.state.ct,
+          light.state.alert,
+          light.state.colormode,
+          light.state.reachable,
+          light.name,
+          cassandra.types.TimeUuid.now(),
+        ],
+      }
+    ]
   })
 
   // Save this stuff
   log.info('Preparing to save light states ...')
   db.batch(
-    queries,
+    flatten(queries, true),
     { prepare: true },
     (err) => {
       if (err) {
