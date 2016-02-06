@@ -110,6 +110,12 @@ All source for the machine learning cron can be found in `ml/`. The docker
 container `ml` will automatically initialize a cron to consistently learn
 from the data collected.
 
+## Features
+
+* ~~Data collection~~ - *Done*
+* Linear regression algorithm - *In progress*
+* Front-end application - Not started
+
 ## License
 
 MIT
