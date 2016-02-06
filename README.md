@@ -4,6 +4,23 @@ A web application to make the lights in your house smarter.
 
 ## Installation
 
+Use git to checkout the repository:
+
+```
+git checkout https://github.com/tlackemann/hu.lux.git hulux
+```
+
+You can then install the application by running:
+
+```
+cd hulux && npm install && npm run build
+```
+
+This will install all required modules, compile the source code, and build the
+front-end application.
+
+### Running
+
 This application is designed to be started with [Docker](https://docker.com/).
 
 You can start the application by running:
