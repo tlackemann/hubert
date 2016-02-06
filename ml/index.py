@@ -22,7 +22,8 @@ for light in lights:
     Z = []
 
     # Now load all the events for this light
-    light_events = session.execute('SELECT light_id, state_on, reachable, bri, hue, sat, x, y, ts FROM light_events WHERE light_id = %s ORDER BY ts DESC', [light.light_id])
+    sql = 'SELECT light_id, state_on, reachable, bri, hue, sat, x, y, ts FROM light_events WHERE light_id = %s ORDER BY ts DESC'
+    light_events = session.execute(sql, [light.light_id])
     for event in light_events:
         # Get the datetime of the event
         event_time = cassandra.util.datetime_from_uuid1(event.ts)
@@ -54,6 +55,11 @@ for light in lights:
     print clf.predict(8460)
     # Sun 9:00am = (6 * 1440) + (9 * 60) + 0 = 8640 + 540 = 9180
     print clf.predict(9180)
+
+    # If we have over 50,000 rows, we can probably do something useful
+    if (len(light_events.current_rows) >= 50000) {
+        # @todo - Actually modify the light to what the best prediction is
+    }
 
 cluster.shutdown()
 print 'Done!'
