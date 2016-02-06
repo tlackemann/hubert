@@ -1,0 +1,2 @@
+* * * * * /usr/src/app/index.py >> /var/log/cron.log 2>&1
+# Empty line is required

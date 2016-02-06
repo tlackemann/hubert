@@ -1,15 +1,18 @@
+#!/usr/bin/python
+
+from time import sleep
 import numpy as np
 import cassandra
 from sklearn import linear_model
 from cassandra.cluster import Cluster
 
-print 'Connecting to Cassandra ...'
+print 'Initializing ...'
 
+print 'Connecting to Cassandra ...'
 # Connect to Cassandra
 cluster = Cluster(['cassandra'])
 session = cluster.connect('hue_app')
 
-# First let's grab all the lights we know about
 print 'Fetching lights ...'
 lights = session.execute('SELECT * FROM lights')
 print 'Fetched %s lights from database ...' % len(lights.current_rows)
@@ -20,7 +23,6 @@ for light in lights:
     X = []
     # Declare our Z output (reachable && state_on, bri, hue, sat, x, y)
     Z = []
-
     # Now load all the events for this light
     sql = 'SELECT light_id, state_on, reachable, bri, hue, sat, x, y, ts FROM light_events WHERE light_id = %s ORDER BY ts DESC'
     light_events = session.execute(sql, [light.light_id])
@@ -45,22 +47,17 @@ for light in lights:
         # Form the Z features
         event_state = 1 if (event.reachable and event.state_on) else 0
         Z.append([event_state, event.bri, event.hue, event.sat, event.x, event.y])
-
     # Create a linear regression on the indv. light
     clf = linear_model.LinearRegression()
     clf.fit(X, Z)
-
     # Predict a custom time
     # Sat 9:00pm = (5 * 1440) + (21 * 60) + 0 = 7200 + 1260 = 8460
     print clf.predict(8460)
     # Sun 9:00am = (6 * 1440) + (9 * 60) + 0 = 8640 + 540 = 9180
     print clf.predict(9180)
-
     # If we have over 50,000 rows, we can probably do something useful
     if len(light_events.current_rows) >= 50000:
         # @todo - Actually modify the light to what the best prediction is
         print '@todo'
-
-
-cluster.shutdown()
-print 'Done!'
+    # Done!
+    print 'Done!'

@@ -44,7 +44,7 @@ docker run -it --link hueapp_cassandra_1:cassandra --rm hueapp_cassandra sh -c '
 ## How It Works
 
 hu.lux automatically checks the status of your Hue lights every 30 or so seconds
-and records the information to a Cassandra database. A python daemon then reads
+and records the information to a Cassandra database. A python cron then reads
 the information and makes predictions on based on the current conditions.
 
 ### Learning
@@ -79,9 +79,9 @@ The application source is located in the `app/` directory.
 ### Server
 
 The server application is located in the `src/` directory but is compiled and
-run from the `dist/` directory.
+run from the `dist/` directory. Data is collected while the server is running.
 
-### Machine Learning Daemon
+### Machine Learning Cron
 
 hu.lux applies linear regression to build opinions on the states of your Hue
 lights. Python and [scikit-learn](http://scikit-learn.org/stable/) are used
@@ -89,8 +89,8 @@ to build intelligence from the data the application collects. hu.lux is able
 to determine when your lights should be on or off and will automatically adjust
 these settings based on feedback given.
 
-All source for the machine learning daemon can be found in `ml/`. The docker
-container `ml` will automatically initialize a daemon to consistently learn
+All source for the machine learning cron can be found in `ml/`. The docker
+container `ml` will automatically initialize a cron to consistently learn
 from the data collected.
 
 ## License
