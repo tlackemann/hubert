@@ -14,3 +14,11 @@ cassandra:
   build: cassandra/
   expose:
     - "9042"
+
+# Machine Learning Daemon
+ml:
+  build: ml/
+  links:
+    - cassandra 
+  volumes:
+    - ./ml:/usr/src/app

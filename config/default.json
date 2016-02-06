@@ -2,7 +2,8 @@
   "app": {
     "port": "3000",
     "checkInterval": "30000",
-    "errorThreshold": "5"
+    "errorThreshold": "5",
+    "minimumDataThreshold": "50000"
   },
   "hue": {
     "username": "59acd3ee04378737288552274697ab"

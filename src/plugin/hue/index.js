@@ -56,8 +56,6 @@ const saveLightStates = (lights) => {
   const values = fill(clone(columns), '?')
 
   const queries = map(lights, (light) => {
-    log.debug('Building query for light "%s"', light.name)
-
     return {
       query: `INSERT INTO light_events (${columns.join(',')}) VALUES (${values.join(',')})`,
       params: [
@@ -81,7 +79,6 @@ const saveLightStates = (lights) => {
 
   // Save this stuff
   log.info('Preparing to save light states ...')
-  log.debug('Queries: %s', queries.length)
   db.batch(
     queries,
     { prepare: true },

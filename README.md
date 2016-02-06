@@ -1,6 +1,6 @@
-# Hue App
+# hu.lux
 
-A web-application to make the lights in your house smarter.
+A web application to make the lights in your house smarter.
 
 ## Installation
 
@@ -54,3 +54,32 @@ npm run dev
 This will setup a listener on the `src/` folder to compile into the `dist/`
 folder. When a change is detected on the `dist/` folder, the application will
 automatically reboot on the Docker instance.
+
+### Front-end
+
+The front-end application is built using
+[React](https://facebook.github.io/react/index.html) &
+[Redux](http://redux.js.org/).
+
+The application source is located in the `app/` directory.
+
+### Server
+
+The server application is located in the `src/` directory but is compiled and
+run from the `dist/` directory.
+
+### Machine Learning Daemon
+
+hu.lux applies linear regression to build opinions on the states of your Hue
+lights. Python and [scikit-learn](http://scikit-learn.org/stable/) are used
+to build intelligence from the data the application collects. hu.lux is able
+to determine when your lights should be on or off and will automatically adjust
+these settings based on feedback given.
+
+All source for the machine learning daemon can be found in `ml/`. The docker
+container `ml` will automatically initialize a daemon to consistently learn
+from the data collected.
+
+## License
+
+MIT
