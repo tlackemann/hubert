@@ -52,14 +52,14 @@ for light in lights:
         event_state = 1 if (event.reachable and event.state_on) else 0
         # Based on our number of observations, we should be more kind to lesser
         # observations to try and not overfit
-        if total_rows < 10000:
-            Y.append([event.hue, event.bri])
-        elif total_rows >= 10000 and total_rows < 50000:
-            Y.append([event.hue, event.bri, event.sat, event_state])
+        if total_rows < 20000:
+            Y.append([event_state])
+        elif total_rows >= 20000 and total_rows < 50000:
+            Y.append([event_state, event.hue, event.bri, event.sat])
         else:
-            print '@todo'
+            Y.append([event_state, event.hue, event.bri, event.sat, event.x, event.y])
             # @todo - Actually modify the light to what the best prediction is
-            Y.append([event.hue, event.bri, event.sat, event_state, event.x, event.y])
+            print '@todo'
 
     # Split the data into training/testing sets
     X_train = X[:-20]
@@ -74,16 +74,16 @@ for light in lights:
     clf.fit(X_train, Y_train)
 
     # Print some useful information
-    if total_rows < 10000:
-        print 'Using features "hue" and "bri"'
-    elif total_rows >= 10000 and total_rows < 50000:
-        print 'Using features "hue", "bri", "sat", and "state_on"'
+    print 'Coefficients: %s' % clf.coef_
+    print 'Residual sum of squares: %.2f' % np.mean((clf.predict(X_test) - Y_test) ** 2)
+    print 'Variance score: %.2f' % clf.score(X_test, Y_test) # 1 is perfect prediction
+
+    if total_rows < 20000:
+        print 'Using features "state_on"'
+    elif total_rows >= 20000 and total_rows < 50000:
+        print 'Using features "state_on", "hue", "bri", and "sat"'
     else:
-        print 'Using features "hue", "bri", "sat", "state_on", "x", and "y"'
-
-    print("Residual sum of squares: %.2f" % np.mean((clf.predict(X_test) - Y_test) ** 2))
-    print('Variance score: %.2f' % clf.score(X_test, Y_test)) # 1 is perfect prediction
-
+        print 'Using features "state_on", "hue", "bri", "sat", "x", and "y"'
 # Done!
 print 'Done!'
 end_time = time.time()
