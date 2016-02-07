@@ -9,14 +9,6 @@ import cassandra
 from sklearn import linear_model, datasets
 from cassandra.cluster import Cluster
 
-# Helper function to get as timezone
-def utc_to_local(utc_dt):
-    # get integer timestamp to avoid precision lost
-    timestamp = calendar.timegm(utc_dt.timetuple())
-    local_dt = datetime.fromtimestamp(timestamp)
-    assert utc_dt.resolution >= timedelta(microseconds=1)
-    return local_dt.replace(microsecond=utc_dt.microsecond)
-
 print 'Initializing ...'
 start_time = time.time()
 LR_LOWER_LIMIT = 20158
@@ -107,13 +99,13 @@ for light in lights:
         # If we have enough observations, start to play with the lights
         if total_rows >= LR_LOWER_LIMIT and total_rows < LR_UPPER_LIMIT:
             print '"%s">> Modifying state of light ...' % light.name
-            right_now = utc_to_local(datetime.now())
+            right_now = datetime.now()
             print '"%s">> The time is %s' % (light.name, right_now)
             print '"%s">> Predicting for hour %s' % (light.name, right_now.hour)
             print clf.predict(right_now.hour)
         elif total_rows >= LR_UPPER_LIMIT:
             print '"%s">> Modifying state of light ...' % light.name
-            right_now = utc_to_local(datetime.now())
+            right_now = datetime.now()
             print '"%s">> The time is %s' % (light.name, right_now)
             print '@todo'
         else:
