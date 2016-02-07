@@ -9,6 +9,8 @@ from cassandra.cluster import Cluster
 
 print 'Initializing ...'
 start_time = time.time()
+LR_LOWER_LIMIT = 20158
+LR_UPPER_LIMIT = 40316
 
 print 'Connecting to Cassandra ...'
 # Connect to Cassandra
@@ -37,26 +39,37 @@ for light in lights:
         day_of_week = event_time.weekday()
         current_hour = event_time.hour
         current_minute = event_time.minute
-        # Get the datetime of the timeuuid - We're going to convert this to a
-        # "Week Minute" (0-10079 based scale based on how many minutes in a week)
-        # 1440 = Minutes in a day
-        # Formula: [(weekday * 1440) + (hour * 60) + minute]
-        # e.g.
-        # Monday 12:00am = (0 * 1440) + (0 * 60) + 0 = 0
-        # Monday 1:00am = (0 * 1440) + (1 * 60) + 0 = 59
-        # Tuesday 12:00am = (1 * 1440) + (0 * 60) + 0 = 1339
-        # Sunday 11:59pm = (6 * 1440) + (23 * 60) + 59 = 8640 + 1380 + 59 = 10079
-        week_hour = (day_of_week * 1440) + (current_hour * 60) + current_minute
-        X.append([week_hour])
-        # Form the Y features
+        # Light is ON if it's both reachable and declared on
         event_state = 1 if (event.reachable and event.state_on) else 0
-        # Based on our number of observations, we should be more kind to lesser
-        # observations to try and not overfit
-        if total_rows < 20000:
+
+        # Depending on the amount of data we have, we're going to build the
+        # linear regression model slightly different to get the best performance
+        # out of the model.
+        #
+        # <= LR_LOWER_LIMIT - Look at predictions by 'hour'
+        # >= LR_UPPER_LIMIT - Look at predictions by 'week_hour'
+        if total_rows < LR_LOWER_LIMIT:
+            # X - hour
+            X.append([current_hour])
+            # Features: state
             Y.append([event_state])
-        elif total_rows >= 20000 and total_rows < 50000:
+        elif total_rows >= LR_LOWER_LIMIT and total_rows < LR_UPPER_LIMIT:
+            # X - hour
+            X.append([current_hour])
+            # Features: state, hue, bri, sat
             Y.append([event_state, event.hue, event.bri, event.sat])
         else:
+            # "Week Minute" (0-10079 based scale based on how many minutes in a week)
+            # 1440 = Minutes in a day
+            # Formula: [(weekday * 1440) + (hour * 60) + minute]
+            # e.g.
+            # Monday 12:00am = (0 * 1440) + (0 * 60) + 0 = 0
+            # Monday 1:00am = (0 * 1440) + (1 * 60) + 0 = 59
+            # Tuesday 12:00am = (1 * 1440) + (0 * 60) + 0 = 1339
+            # Sunday 11:59pm = (6 * 1440) + (23 * 60) + 59 = 8640 + 1380 + 59 = 10079
+            week_hour = (day_of_week * 1440) + (current_hour * 60) + current_minute
+            X.append([week_hour])
+            # Features: state, hue, bri, sat, x, y
             Y.append([event_state, event.hue, event.bri, event.sat, event.x, event.y])
             # @todo - Actually modify the light to what the best prediction is
             print '@todo'
