@@ -17,12 +17,12 @@ cassandra:
 
 # ML Linear Regression
 ml:
-  build: ml/
+  build: script/
   links:
     - cassandra
     - rabbitmq:hulux.rabbitmq
   volumes:
-    - ./ml:/usr/src/app
+    - ./script:/usr/src/app
 
 # RabbitMQ
 rabbitmq:
@@ -33,3 +33,10 @@ rabbitmq:
     - RABBITMQ_ERLANG_COOKIE=hulux-cookie
     - RABBITMQ_DEFAULT_USER=hulux
     - RABBITMQ_DEFAULT_PASS=hulux
+
+worker:
+  build: worker/
+  links:
+    - rabbitmq:hulux.rabbitmq
+  volumes:
+    - .:/usr/src/app

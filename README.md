@@ -106,7 +106,7 @@ to build intelligence from the data the application collects. hu.lux is able
 to determine when your lights should be on or off and will automatically adjust
 these settings based on feedback given.
 
-All source for the machine learning cron can be found in `ml/`. The docker
+All source for the machine learning cron can be found in `script/`. The docker
 container `ml` will automatically initialize a cron to consistently learn
 from the data collected.
 
