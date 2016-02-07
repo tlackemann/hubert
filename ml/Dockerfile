@@ -27,6 +27,8 @@ RUN pip install phue
 # Install daemon package
 RUN pip install python-daemon
 
+RUN pip install pika
+
 # Setup the application
 WORKDIR /usr/src/app
 RUN mkdir -p /usr/src/app

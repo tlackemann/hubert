@@ -9,16 +9,27 @@ app:
     - .:/usr/src/app
   command: nodemon -L index.js
 
-# Cassandra Database
+# Cassandra
 cassandra:
   build: cassandra/
   expose:
     - "9042"
 
-# Machine Learning Daemon
+# ML Linear Regression
 ml:
   build: ml/
   links:
     - cassandra
+    - rabbitmq:hulux.rabbitmq
   volumes:
     - ./ml:/usr/src/app
+
+# RabbitMQ
+rabbitmq:
+  image: rabbitmq:3.6
+  hostname: hulux.rabbitmq
+  environment:
+    - RABBITMQ_NODENAME=hulux@hulux.rabbitmq
+    - RABBITMQ_ERLANG_COOKIE=hulux-cookie
+    - RABBITMQ_DEFAULT_USER=hulux
+    - RABBITMQ_DEFAULT_PASS=hulux

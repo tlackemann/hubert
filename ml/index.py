@@ -1,5 +1,5 @@
 #!/usr/bin/python
-
+import json
 import time
 import calendar
 from datetime import datetime, timedelta
@@ -8,11 +8,20 @@ import numpy as np
 import cassandra
 from sklearn import linear_model, datasets
 from cassandra.cluster import Cluster
+import pika
 
 print 'Initializing ...'
 start_time = time.time()
+
+RABBITMQ_QUEUE = 'hulux_events'
 LR_LOWER_LIMIT = 20158
 LR_UPPER_LIMIT = 40316
+
+print 'Connecting to RabbitMQ ...'
+rmq_credentials = pika.PlainCredentials('hulux', 'hulux')
+rmq = pika.BlockingConnection(pika.ConnectionParameters('hulux.rabbitmq', credentials=rmq_credentials))
+rmq_channel = rmq.channel()
+rmq_channel.queue_declare(queue=RABBITMQ_QUEUE)
 
 print 'Connecting to Cassandra ...'
 # Connect to Cassandra
@@ -103,6 +112,9 @@ for light in lights:
             print '"%s">> The time is %s' % (light.name, right_now)
             print '"%s">> Predicting for hour %s' % (light.name, right_now.hour)
             print clf.predict(right_now.hour)
+            # @todo - Send a message to RabbitMQ to change the state of the light
+            # A worker will then pick up the message and process the result
+            # rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body='testing')
         elif total_rows >= LR_UPPER_LIMIT:
             print '"%s">> Modifying state of light ...' % light.name
             right_now = datetime.now()
@@ -110,6 +122,8 @@ for light in lights:
             print '@todo'
         else:
             print '"%s">> Not enough data, nothing to do (%d observations)' % (light.name, total_rows)
+
+
     else:
         print '"%s">> RSS too high, nothing to do' % (light.name)
 
@@ -117,4 +131,6 @@ for light in lights:
 # Done!
 end_time = time.time()
 total_time = end_time - start_time
+rmq.close()
+cluster.shutdown()
 print 'Done! (Ran in %.6f seconds)' % total_time
