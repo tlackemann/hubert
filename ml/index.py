@@ -1,11 +1,21 @@
 #!/usr/bin/python
 
 import time
+import calendar
+from datetime import datetime, timedelta
 from time import sleep
 import numpy as np
 import cassandra
 from sklearn import linear_model, datasets
 from cassandra.cluster import Cluster
+
+# Helper function to get as timezone
+def utc_to_local(utc_dt):
+    # get integer timestamp to avoid precision lost
+    timestamp = calendar.timegm(utc_dt.timetuple())
+    local_dt = datetime.fromtimestamp(timestamp)
+    assert utc_dt.resolution >= timedelta(microseconds=1)
+    return local_dt.replace(microsecond=utc_dt.microsecond)
 
 print 'Initializing ...'
 start_time = time.time()
@@ -22,7 +32,7 @@ lights = session.execute('SELECT * FROM lights')
 print 'Fetched %s lights from database ...' % len(lights.current_rows)
 
 for light in lights:
-    print 'Processing light "%s"' % light.name
+    print '"%s">> Processing light' % light.name
     # Declare our X input (week hour)
     X = []
     # Declare our Y output (reachable && state_on, bri, hue, sat, x, y)
@@ -71,8 +81,6 @@ for light in lights:
             X.append([week_hour])
             # Features: state, hue, bri, sat, x, y
             Y.append([event_state, event.hue, event.bri, event.sat, event.x, event.y])
-            # @todo - Actually modify the light to what the best prediction is
-            print '@todo'
 
     # Split the data into training/testing sets
     X_train = X[:-20]
@@ -87,18 +95,34 @@ for light in lights:
     clf.fit(X_train, Y_train)
 
     # Print some useful information
-    print 'Coefficients: %s' % clf.coef_
-    print 'Residual sum of squares: %.2f' % np.mean((clf.predict(X_test) - Y_test) ** 2)
-    print 'Variance score: %.2f' % clf.score(X_test, Y_test) # 1 is perfect prediction
+    rss = np.mean((clf.predict(X_test) - Y_test) ** 2)
+    variance = clf.score(X_test, Y_test)
+    print '"%s">> Coefficients: %s' % (light.name, clf.coef_)
+    print '"%s">> Residual sum of squares: %.2f' % (light.name, rss)
+    print '"%s">> Variance score: %.2f' % (light.name, variance) # 1 is perfect prediction
 
-    if total_rows < 20000:
-        print 'Using features "state_on"'
-    elif total_rows >= 20000 and total_rows < 50000:
-        print 'Using features "state_on", "hue", "bri", and "sat"'
+    # EXPERIMENTAL
+    # 70% is passing by my standards, try and alter the state of this light
+    if rss < 0.3:
+        # If we have enough observations, start to play with the lights
+        if total_rows >= LR_LOWER_LIMIT and total_rows < LR_UPPER_LIMIT:
+            print '"%s">> Modifying state of light ...' % light.name
+            right_now = utc_to_local(datetime.now())
+            print '"%s">> The time is %s' % (light.name, right_now)
+            print '"%s">> Predicting for hour %s' % (light.name, right_now.hour)
+            print clf.predict(right_now.hour)
+        elif total_rows >= LR_UPPER_LIMIT:
+            print '"%s">> Modifying state of light ...' % light.name
+            right_now = utc_to_local(datetime.now())
+            print '"%s">> The time is %s' % (light.name, right_now)
+            print '@todo'
+        else:
+            print '"%s">> Not enough data, nothing to do (%d observations)' % (light.name, total_rows)
     else:
-        print 'Using features "state_on", "hue", "bri", "sat", "x", and "y"'
+        print '"%s">> RSS too high, nothing to do' % (light.name)
+
+
 # Done!
-print 'Done!'
 end_time = time.time()
 total_time = end_time - start_time
-print 'Ran in %s seconds' % total_time
+print 'Done! (Ran in %.6f seconds)' % total_time
