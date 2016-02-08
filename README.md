@@ -2,6 +2,16 @@
 
 A web application to make the [Hue](http://meethue.com) lights in your house smarter.
 
+hu.lux learns from your light usage patterns. Over time, hu.lux will determine
+when your lights should be on or off and even what color they should be. It does
+this by logging the state of your lights every so often and running the data
+against a multiple regression model. hu.lux will only change the state of your
+lights once it has determined enough data has been collected and the error rate
+(calculate by determining the residual sum of squares, RSS) is within a certain
+threshold.
+
+For more information, see [How It Works](#how-it-works).
+
 ## Installation
 
 Use git to checkout the repository:
