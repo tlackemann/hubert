@@ -127,8 +127,8 @@ for light in lights:
         print '"%s">> RSS too high, nothing to do' % (light.name)
 
     prediction = clf.predict(right_now.hour)
-    predict_state = 'on' if int(round(prediction[0][0])) else 'off'
-    print '%s>> Predicting state of light is: %s' % (light.name, predict_state)
+    predict_state = 'ON' if int(round(prediction[0][0])) else 'OFF'
+    print '"%s">> Predicting state of light is: %s' % (light.name, predict_state)
 
 
 # Done!
