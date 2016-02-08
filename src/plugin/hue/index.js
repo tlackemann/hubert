@@ -1,19 +1,10 @@
 import config from 'config'
 import Promise from 'bluebird'
-import cassandra from 'cassandra-driver'
 import { clone, map, fill, flatten } from 'lodash'
+import db from './../../cassandra'
+import cassandra from 'cassandra-driver'
 import log from './../../log'
 import hue from './../../hue'
-
-// Connect to Cassandra
-const db = new cassandra.Client({
-  contactPoints: config.db.cassandra.hosts,
-  keyspace: config.db.cassandra.keyspace,
-  authProvider: new cassandra.auth.PlainTextAuthProvider(
-    config.db.cassandra.username || null,
-    config.db.cassandra.password || null
-  ),
-})
 
 // Setup a reference for our API
 let api = {};

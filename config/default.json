@@ -8,6 +8,10 @@
   "hue": {
     "username": "59acd3ee04378737288552274697ab"
   },
+  "rabbitmq": {
+    "host": "hulux.rabbitmq",
+    "queue": "hulux_events"
+  },
   "db": {
     "cassandra": {
       "hosts": [

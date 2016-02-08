@@ -33,7 +33,7 @@ lights = session.execute('SELECT * FROM lights')
 print 'Fetched %s lights from database ...' % len(lights.current_rows)
 
 for light in lights:
-    print '"%s">> Processing light' % light.name
+    print '"%s">> Processing light ...' % light.name
     # Declare our X input (week hour)
     X = []
     # Declare our Y output (reachable && state_on, bri, hue, sat, x, y)
@@ -103,12 +103,12 @@ for light in lights:
     print '"%s">> Variance score: %.2f' % (light.name, variance) # 1 is perfect prediction
 
     # EXPERIMENTAL
+    right_now = datetime.now()
     # 70% is passing by my standards, try and alter the state of this light
     if rss < 0.3:
         # If we have enough observations, start to play with the lights
         if total_rows >= LR_LOWER_LIMIT and total_rows < LR_UPPER_LIMIT:
             print '"%s">> Modifying state of light ...' % light.name
-            right_now = datetime.now()
             print '"%s">> The time is %s' % (light.name, right_now)
             print '"%s">> Predicting for hour %s' % (light.name, right_now.hour)
             print clf.predict(right_now.hour)
@@ -117,7 +117,6 @@ for light in lights:
             # rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body='testing')
         elif total_rows >= LR_UPPER_LIMIT:
             print '"%s">> Modifying state of light ...' % light.name
-            right_now = datetime.now()
             print '"%s">> The time is %s' % (light.name, right_now)
             print '@todo'
         else:
@@ -126,6 +125,10 @@ for light in lights:
 
     else:
         print '"%s">> RSS too high, nothing to do' % (light.name)
+
+    prediction = clf.predict(right_now.hour)
+    predict_state = 'on' if int(round(prediction[0][0])) else 'off'
+    print '%s>> Predicting state of light is: %s' % (light.name, predict_state)
 
 
 # Done!
