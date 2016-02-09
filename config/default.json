@@ -9,17 +9,17 @@
     "username": "59acd3ee04378737288552274697ab"
   },
   "rabbitmq": {
-    "host": "hulux.rabbitmq",
-    "queue": "hulux_events",
-    "login": "hulux",
-    "password": "hulux"
+    "host": "hubert.rabbitmq",
+    "queue": "hubert_events",
+    "login": "hubert",
+    "password": "hubert"
   },
   "db": {
     "cassandra": {
       "hosts": [
         "cassandra"
       ],
-      "keyspace": "hue_app"
+      "keyspace": "hubert"
     }
   },
   "log": {

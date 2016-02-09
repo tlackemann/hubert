@@ -1,42 +1,42 @@
-# Hue App
-app:
-  build: .
-  ports:
-    - "3000:3000"
+# Hubert (Main listener)
+hubert:
+  build: worker/
   links:
     - cassandra
   volumes:
     - .:/usr/src/app
-  command: nodemon -L index.js
+  command: ./bin/hubert
+
+# Hubert Machine Learning
+ml:
+  build: script/
+  links:
+    - cassandra
+    - rabbitmq:hubert.rabbitmq
+  volumes:
+    - ./script:/usr/src/app
+
+# Queue Processor
+processor:
+  build: worker/
+  links:
+    - rabbitmq:hubert
+  volumes:
+    - .:/usr/src/app
+  command: ./bin/processor
+
+# RabbitMQ
+rabbitmq:
+  image: rabbitmq:3.6
+  hostname: hubert.rabbitmq
+  environment:
+    - RABBITMQ_NODENAME=hubert@hubert.rabbitmq
+    - RABBITMQ_ERLANG_COOKIE=hubert-cookie
+    - RABBITMQ_DEFAULT_USER=hubert
+    - RABBITMQ_DEFAULT_PASS=hubert
 
 # Cassandra
 cassandra:
   build: cassandra/
   expose:
     - "9042"
-
-# ML Linear Regression
-ml:
-  build: script/
-  links:
-    - cassandra
-    - rabbitmq:hulux.rabbitmq
-  volumes:
-    - ./script:/usr/src/app
-
-# RabbitMQ
-rabbitmq:
-  image: rabbitmq:3.6
-  hostname: hulux.rabbitmq
-  environment:
-    - RABBITMQ_NODENAME=hulux@hulux.rabbitmq
-    - RABBITMQ_ERLANG_COOKIE=hulux-cookie
-    - RABBITMQ_DEFAULT_USER=hulux
-    - RABBITMQ_DEFAULT_PASS=hulux
-
-worker:
-  build: worker/
-  links:
-    - rabbitmq:hulux.rabbitmq
-  volumes:
-    - .:/usr/src/app

@@ -1,12 +1,12 @@
 -- Drop the keyspace
-DROP KEYSPACE IF EXISTS hue_app;
+DROP KEYSPACE IF EXISTS hubert;
 
 -- Create our keyspace
-CREATE KEYSPACE hue_app WITH replication =
+CREATE KEYSPACE hubert WITH replication =
   { 'class': 'SimpleStrategy', 'replication_factor': 1 };
 
 -- Use the keyspace
-USE hue_app;
+USE hubert;
 
 CREATE COLUMNFAMILY lights (
   light_id text,

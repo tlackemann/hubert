@@ -1,2 +1,2 @@
 #!/bin/bash
-babel src/ -d dist && browserify app/index.js -o public/js/bundle.js -t [ babelify --presets [ es2015 react ] ] -v -d
+babel src/ -d dist

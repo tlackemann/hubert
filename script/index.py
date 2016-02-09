@@ -13,13 +13,13 @@ import pika
 start_time = time.time()
 print '%.2f - Initializing ...' % (time.time())
 
-RABBITMQ_QUEUE = 'hulux_events'
+RABBITMQ_QUEUE = 'hubert_events'
 LR_LOWER_LIMIT = 20158
 LR_UPPER_LIMIT = 40316
 
 print '%.2f - Connecting to RabbitMQ ...' % (time.time())
-rmq_credentials = pika.PlainCredentials('hulux', 'hulux')
-rmq = pika.BlockingConnection(pika.ConnectionParameters('hulux.rabbitmq', credentials=rmq_credentials))
+rmq_credentials = pika.PlainCredentials('hubert', 'hubert')
+rmq = pika.BlockingConnection(pika.ConnectionParameters('hubert.rabbitmq', credentials=rmq_credentials))
 rmq_channel = rmq.channel()
 rmq_channel.queue_declare(queue=RABBITMQ_QUEUE)
 
@@ -101,7 +101,13 @@ for light in lights:
     Y_test = Y[-20:]
 
     # Create a linear regression on the indv. light
-    clf = linear_model.LinearRegression()
+    if total_rows < LR_LOWER_LIMIT:
+        print '%.2f - "%s">> Using Ridge Regression' % (time.time(), light.name)
+        clf = linear_model.Ridge()
+    else:
+        print '%.2f - "%s">> Using Linear Regression' % (time.time(), light.name)
+        clf = linear_model.LinearRegression()
+
     clf.fit(X_train, Y_train)
 
     # Print some useful information
@@ -130,7 +136,6 @@ for light in lights:
             print '@todo'
         else:
             rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body='testing')
-            print 'Sending data to RabbitMQ'
             print '%.2f - "%s">> Not enough data, nothing to do (%d observations)' % (time.time(), light.name, total_rows)
 
 

@@ -10,5 +10,4 @@ class Log {
     })
   }
 }
-const log = new Log('hue-app')
-export default log
+export default Log

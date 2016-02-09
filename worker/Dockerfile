@@ -3,4 +3,4 @@ FROM node:5.1.1
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
-CMD [ "./bin/worker" ]
+CMD [ "node", "index.js" ]
