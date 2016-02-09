@@ -83,7 +83,7 @@ within an acceptable limit.
 Hubert is composed of five applications, each ran from an individual container.
 
  1. `hubert` - The main processor; Sends updates to Cassandra container
- 2. `ml` - Machine learning algorithm; Learns from usage and sends messages to RabbitMQ for processing
+ 2. `learn` - Machine learning algorithm; Learns from usage and sends messages to RabbitMQ for processing
  3. `processor` - Processes RabbitMQ messages to alter the state of the lights
  4. `rabbitmq` - A RabbitMQ instance used for publish-subscribe
  5. `cassandra` - A Cassandra instance used for data collection
@@ -103,15 +103,22 @@ folder.
 
 ### Machine Learning Cron
 
-hubert applies linear regression to build opinions on the states of your Hue
+Hubert applies linear regression to build opinions on the states of your Hue
 lights. Python and [scikit-learn](http://scikit-learn.org/stable/) are used
 to build intelligence from the data the application collects. hubert is able
 to determine when your lights should be on or off and will automatically adjust
 these settings based on feedback given.
 
-All source for the machine learning cron can be found in `script/`. The docker
-container `ml` will automatically initialize a cron to consistently learn
-from the data collected.
+All source code for the machine learning script can be found in `script/`. The
+docker container `learn` is setup to be run via a cron.
+
+You can setup a cron by easily adding the following to your `crontab`
+
+```
+* * * * * ./bin/learn
+```
+
+We recommend running the machine learning algorithm every minute.
 
 ## Features
 

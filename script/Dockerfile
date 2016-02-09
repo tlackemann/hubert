@@ -35,10 +35,4 @@ RUN mkdir -p /usr/src/app
 
 COPY index.py /usr/src/app
 
-# Add crontab file in the cron directory
-ADD crontab /etc/cron.d/ml-cron
-RUN chmod 0644 /etc/cron.d/ml-cron
-RUN /usr/bin/crontab /etc/cron.d/ml-cron
-RUN touch /var/log/cron.log
-
-CMD cron && tail -f /var/log/cron.log
+CMD [ "python", "index.py" ]

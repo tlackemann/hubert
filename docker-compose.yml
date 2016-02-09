@@ -8,13 +8,14 @@ hubert:
   command: ./bin/hubert
 
 # Hubert Machine Learning
-ml:
+learn:
   build: script/
   links:
     - cassandra
     - rabbitmq:hubert.rabbitmq
   volumes:
     - ./script:/usr/src/app
+  command: python index.py
 
 # Queue Processor
 processor:
