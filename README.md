@@ -39,10 +39,17 @@ You can start the application by running:
 docker-compose up
 ```
 
-This will start the application and a Cassandra instance.
+This will start all the instances necessary to run Hubert.
 
-You can view the application by navigating to http://192.169.99.100:3000 (this
-might change slightly depending on your Docker installation.)
+#### Instances
+
+Hubert is composed of five applications, each ran from an individual container.
+
+ 1. `hubert` - The main processor; Sends updates to Cassandra container
+ 2. `ml` - Machine learning algorithm; Learns from usage and sends messages to RabbitMQ for processing
+ 3. `processor` - Processes RabbitMQ messages to alter the state of the lights
+ 4. `rabbitmq` - A RabbitMQ instance used for publish-subscribe
+ 5. `cassandra` - A Cassandra instance used for data collection
 
 ### Creating Hue Bridge User
 
