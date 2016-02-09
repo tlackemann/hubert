@@ -10,7 +10,9 @@
   },
   "rabbitmq": {
     "host": "hulux.rabbitmq",
-    "queue": "hulux_events"
+    "queue": "hulux_events",
+    "login": "hulux",
+    "password": "hulux"
   },
   "db": {
     "cassandra": {

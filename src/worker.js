@@ -1,27 +1,28 @@
 import cassandra from 'cassandra-driver'
-import rabbiqmq from './rabbitmq'
+import config from 'config'
+import log from './log'
+import rabbitmq from './rabbitmq'
 import db from './cassandra'
-/**
- * Blocking call for sleep to prevent accidental DDoS on our RabbitMQ instance
- */
-function sleep(delay) {
-  const start = new Date().getTime()
-  while (new Date().getTime() < start + delay);
-}
+
+log.info('Worker running')
 
 // Wait for connection to become established.
-connection.on('ready', function () {
+rabbitmq.on('ready', () => {
+  log.info('Connection ready')
+
+  const options = {
+    autoDelete: false,
+  }
+
   // Use the default 'amq.topic' exchange
-  connection.queue(config.rabbitmq.queue, function (q) {
+  rabbitmq.queue( config.rabbitmq.queue, options, (q) => {
+    log.info('Subscribed to %s', config.rabbitmq.queue)
     // Catch all messages
-    q.bind('#');
+    q.bind('#')
     // Receive messages
-    q.subscribe(function (message) {
-      // Print messages to stdout
-      console.log(message);
-    });
-
-    sleep(5000)
-
-  });
-});
+    q.subscribe((message, headers, deliveryInfo, messageObject) => {
+      const msg = message.data.toString()
+      log.info('Received message: %s', msg);
+    })
+  })
+})

@@ -11,29 +11,29 @@ from cassandra.cluster import Cluster
 import pika
 
 start_time = time.time()
-print '%s - Initializing ...' % (time.time())
+print '%.2f - Initializing ...' % (time.time())
 
 RABBITMQ_QUEUE = 'hulux_events'
 LR_LOWER_LIMIT = 20158
 LR_UPPER_LIMIT = 40316
 
-print '%s - Connecting to RabbitMQ ...' % (time.time())
+print '%.2f - Connecting to RabbitMQ ...' % (time.time())
 rmq_credentials = pika.PlainCredentials('hulux', 'hulux')
 rmq = pika.BlockingConnection(pika.ConnectionParameters('hulux.rabbitmq', credentials=rmq_credentials))
 rmq_channel = rmq.channel()
 rmq_channel.queue_declare(queue=RABBITMQ_QUEUE)
 
-print '%s - Connecting to Cassandra ...' % (time.time())
+print '%.2f - Connecting to Cassandra ...' % (time.time())
 # Connect to Cassandra
 cluster = Cluster(['cassandra'])
 session = cluster.connect('hue_app')
 
-print '%s - Fetching lights ...' % (time.time())
+print '%.2f - Fetching lights ...' % (time.time())
 lights = session.execute('SELECT * FROM lights')
-print '%s - Fetched %s lights from database ...' % (time.time(), len(lights.current_rows))
+print '%.2f - Fetched %s lights from database ...' % (time.time(), len(lights.current_rows))
 
 for light in lights:
-    print '%s - "%s">> Processing light ...' % (time.time(), light.name)
+    print '%.2f - "%s">> Processing light ...' % (time.time(), light.name)
     # Declare our X input (week hour)
     X = []
     # Declare our Y output (reachable && state_on, bri, hue, sat, x, y)
@@ -49,7 +49,7 @@ for light in lights:
     light_event_count = session.execute(sql_count, [light.light_id, LR_UPPER_LIMIT])
     total_rows = light_event_count.current_rows[0].c
 
-    print '%s - Fetched %s total rows' % (time.time(), total_rows)
+    print '%.2f - "%s">> Fetched %s total rows' % (time.time(), light.name, total_rows)
 
     # Loop over each light and store the data in X and Y
     for event in light_events:
@@ -107,9 +107,9 @@ for light in lights:
     # Print some useful information
     rss = np.mean((clf.predict(X_test) - Y_test) ** 2)
     variance = clf.score(X_test, Y_test)
-    print '%s - "%s">> Coefficients: %s' % (time.time(), light.name, clf.coef_)
-    print '%s - "%s">> Residual sum of squares: %.2f' % (time.time(), light.name, rss)
-    print '%s - "%s">> Variance score: %.2f' % (time.time(), light.name, variance) # 1 is perfect prediction
+    print '%.2f - "%s">> Coefficients: %s' % (time.time(), light.name, clf.coef_)
+    print '%.2f - "%s">> Residual sum of squares: %.2f' % (time.time(), light.name, rss)
+    print '%.2f - "%s">> Variance score: %.2f' % (time.time(), light.name, variance) # 1 is perfect prediction
 
     # EXPERIMENTAL
     right_now = datetime.now()
@@ -117,32 +117,35 @@ for light in lights:
     if rss < 0.3:
         # If we have enough observations, start to play with the lights
         if total_rows >= LR_LOWER_LIMIT and total_rows < LR_UPPER_LIMIT:
-            print '%s - "%s">> Modifying state of light ...' % (time.time(), light.name)
-            print '%s - "%s">> The time is %s' % (time.time(), light.name, right_now)
-            print '%s - "%s">> Predicting for hour %s' % (time.time(), light.name, right_now.hour)
+            print '%.2f - "%s">> Modifying state of light ...' % (time.time(), light.name)
+            print '%.2f - "%s">> The time is %s' % (time.time(), light.name, right_now)
+            print '%.2f - "%s">> Predicting for hour %s' % (time.time(), light.name, right_now.hour)
             print clf.predict(right_now.hour)
             # @todo - Send a message to RabbitMQ to change the state of the light
             # A worker will then pick up the message and process the result
             # rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body='testing')
         elif total_rows >= LR_UPPER_LIMIT:
-            print '%s - "%s">> Modifying state of light ...' % (time.time(), light.name)
-            print '%s - "%s">> The time is %s' % (time.time(), light.name, right_now)
+            print '%.2f - "%s">> Modifying state of light ...' % (time.time(), light.name)
+            print '%.2f - "%s">> The time is %s' % (time.time(), light.name, right_now)
             print '@todo'
         else:
-            print '%s - "%s">> Not enough data, nothing to do (%d observations)' % (time.time(), light.name, total_rows)
+            rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body='testing')
+            print 'Sending data to RabbitMQ'
+            print '%.2f - "%s">> Not enough data, nothing to do (%d observations)' % (time.time(), light.name, total_rows)
 
 
     else:
-        print '%s - "%s">> RSS too high, nothing to do' % (time.time(), light.name)
+        print '%.2f - "%s">> RSS too high, nothing to do' % (time.time(), light.name)
 
     prediction = clf.predict(right_now.hour)
     predict_state = 'ON' if int(round(prediction[0][0])) else 'OFF'
-    print '%s - "%s">> Predicting state of light is: %s' % (time.time(), light.name, predict_state)
+    print '%.2f - "%s">> Predicting state of light is: %s (%s)' % (time.time(), light.name, predict_state, prediction[0][0])
 
+    print '%.2f - "%s">> Done processing light' % (time.time(), light.name)
 
 # Done!
 end_time = time.time()
 total_time = end_time - start_time
 rmq.close()
 cluster.shutdown()
-print '%s - Done! (Ran in %.6f seconds)' % (time.time(), total_time)
+print '%.2f - Done! (Ran in %.6f seconds)' % (time.time(), total_time)
