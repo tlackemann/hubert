@@ -107,7 +107,8 @@ const getLightState = () => {
     .catch(handleError)
 }
 
-  log.info('Initializing Hue Monitor')
+log.info('Initializing Hue Monitor')
+
 
 // Find available bridges and use the first one
 // @todo - Support for multiple bridges
@@ -142,3 +143,10 @@ hue.getDefaultBridge()
     log.error('Shutting down the application ...')
     return process.exit(1)
   })
+
+// Handle shutting down gracefully
+process.on('SIGTERM', () => {
+  log.info('Shutting down gracefully ...')
+  clearInterval(intervalGetLightState)
+  process.exit(0)
+});

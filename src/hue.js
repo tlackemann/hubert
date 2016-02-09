@@ -1,7 +1,10 @@
 import hue from 'node-hue-api'
 import Promise from 'bluebird'
 import config from 'config'
-import log from './log'
+import Log from './log'
+
+// Setup logger
+const log = new Log('hubert-hue')
 
 const HueApi = hue.HueApi;
 

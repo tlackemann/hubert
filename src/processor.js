@@ -1,8 +1,11 @@
 import cassandra from 'cassandra-driver'
 import config from 'config'
-import log from './log'
+import Log from './log'
 import rabbitmq from './rabbitmq'
 import db from './cassandra'
+
+// Setup logger
+const log = new Log('hubert-processor')
 
 log.info('Worker running')
 

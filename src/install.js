@@ -1,5 +1,8 @@
 import hue from './hue'
-import log from './log'
+import Log from './log'
+
+// Setup logger
+const log = new Log('hubert-install')
 
 // Set the username
 const username = process.env.HUE_USER || 'hue-app-user';

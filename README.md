@@ -3,7 +3,7 @@
 A web application to make the [Hue](http://meethue.com) lights in your house smarter.
 
 Hubert learns from your light usage patterns. Over time, Hubert will determine
-when your lights should be on or off and even what color they should be. It does
+when your lights should be on or off or even what color they should be. It does
 this by logging the state of your lights every so often and running the data
 against a multiple regression model. Hubert will only change the state of your
 lights once it has determined enough data has been collected and the error rate
@@ -92,21 +92,7 @@ npm run dev
 ```
 
 This will setup a listener on the `src/` folder to compile into the `dist/`
-folder. When a change is detected on the `dist/` folder, the application will
-automatically reboot on the Docker instance.
-
-### Front-end
-
-The front-end application is built using
-[React](https://facebook.github.io/react/index.html) &
-[Redux](http://redux.js.org/).
-
-The application source is located in the `app/` directory.
-
-### Server
-
-The server application is located in the `src/` directory but is compiled and
-run from the `dist/` directory. Data is collected while the server is running.
+folder.
 
 ### Machine Learning Cron
 
@@ -124,7 +110,6 @@ from the data collected.
 
 * ~~Data collection~~ - *Done*
 * Linear regression algorithm - *In progress*
-* Front-end application - Not started
 
 ## License
 
