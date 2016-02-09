@@ -41,16 +41,6 @@ docker-compose up
 
 This will start all the instances necessary to run Hubert.
 
-#### Instances
-
-Hubert is composed of five applications, each ran from an individual container.
-
- 1. `hubert` - The main processor; Sends updates to Cassandra container
- 2. `ml` - Machine learning algorithm; Learns from usage and sends messages to RabbitMQ for processing
- 3. `processor` - Processes RabbitMQ messages to alter the state of the lights
- 4. `rabbitmq` - A RabbitMQ instance used for publish-subscribe
- 5. `cassandra` - A Cassandra instance used for data collection
-
 ### Creating Hue Bridge User
 
 In order to use this application, you'll need to register it with your Hue
@@ -87,6 +77,16 @@ The first few weeks of data collection are to train the linear regression model.
 hubert does not start altering the state of your lights until enough data
 (currently 50,000 data points) has been collected and the rate of error is
 within an acceptable limit.
+
+### Containers
+
+Hubert is composed of five applications, each ran from an individual container.
+
+ 1. `hubert` - The main processor; Sends updates to Cassandra container
+ 2. `ml` - Machine learning algorithm; Learns from usage and sends messages to RabbitMQ for processing
+ 3. `processor` - Processes RabbitMQ messages to alter the state of the lights
+ 4. `rabbitmq` - A RabbitMQ instance used for publish-subscribe
+ 5. `cassandra` - A Cassandra instance used for data collection
 
 ## Development
 
