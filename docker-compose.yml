@@ -3,6 +3,7 @@ hubert:
   build: worker/
   links:
     - cassandra
+    - rabbitmq:hubert
   volumes:
     - .:/usr/src/app
   command: ./bin/hubert
@@ -16,15 +17,6 @@ learn:
   volumes:
     - ./script:/usr/src/app
   command: python index.py
-
-# Queue Processor
-processor:
-  build: worker/
-  links:
-    - rabbitmq:hubert
-  volumes:
-    - .:/usr/src/app
-  command: ./bin/processor
 
 # RabbitMQ
 rabbitmq:

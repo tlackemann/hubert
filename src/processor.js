@@ -1,31 +1,26 @@
-import cassandra from 'cassandra-driver'
+import Hapi from 'hapi'
 import config from 'config'
 import Log from './log'
-import rabbitmq from './rabbitmq'
-import db from './cassandra'
 
-// Setup logger
-const log = new Log('hubert-processor')
+const log = new Log('hubert-worker');
 
-log.info('Worker running')
+// Setup the server
+const server = new Hapi.Server()
+server.connection({
+  port: config.app.port,
+})
 
-// Wait for connection to become established.
-rabbitmq.on('ready', () => {
-  log.info('Connection ready')
-
-  const options = {
-    autoDelete: false,
+// Load our plugins
+server.register([
+  require('./plugin/processor'),
+], (err) => {
+  if (err) {
+    log.error('Failed to load plugin: %s', err)
+    process.exit(1)
   }
 
-  // Use the default 'amq.topic' exchange
-  rabbitmq.queue( config.rabbitmq.queue, options, (q) => {
-    log.info('Subscribed to %s', config.rabbitmq.queue)
-    // Catch all messages
-    q.bind('#')
-    // Receive messages
-    q.subscribe((message, headers, deliveryInfo, messageObject) => {
-      const msg = message.data.toString()
-      log.info('Received message: %s', msg);
-    })
+  // Run!
+  server.start(() => {
+    log.info('Server running at %s', server.info.uri)
   })
 })

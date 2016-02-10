@@ -62,7 +62,7 @@ To seed the Cassandra instance, ensure your application is running (using
 `docker-compose up`) and run the following:
 
 ```
-docker run -it --link hubert_cassandra_1:cassandra --rm hubert_cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR" -f /docker/hue-app.cql'
+docker run -it --link hubert_cassandra_1:cassandra --rm hubert_cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR" -f /docker/hubert.cql'
 ```
 
 ## How It Works
@@ -82,11 +82,10 @@ within an acceptable limit.
 
 Hubert is composed of five applications, each ran from an individual container.
 
- 1. `hubert` - The main processor; Sends updates to Cassandra container
+ 1. `hubert` - The main processor; Sends updates to Cassandra container; Processes RabbitMQ messages to alter the state of the lights
  2. `learn` - Machine learning algorithm; Learns from usage and sends messages to RabbitMQ for processing
- 3. `processor` - Processes RabbitMQ messages to alter the state of the lights
- 4. `rabbitmq` - A RabbitMQ instance used for publish-subscribe
- 5. `cassandra` - A Cassandra instance used for data collection
+ 3. `rabbitmq` - A RabbitMQ instance used for publish-subscribe
+ 4. `cassandra` - A Cassandra instance used for data collection
 
 ## Development
 
