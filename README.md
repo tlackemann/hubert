@@ -1,5 +1,9 @@
 # Hubert
 
+_He'll get the lights for you._
+
+## Description
+
 A web application to make the [Hue](http://meethue.com) lights in your house smarter.
 
 Hubert learns from your light usage patterns. Over time, Hubert will determine
