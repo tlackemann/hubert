@@ -60,7 +60,7 @@ config file, otherwise the application will not be able to communicate properly.
 ### Seeding Cassandra Database
 
 In addition to creating a bridge user, you'll also need to seed a Cassandra
-instance with the `hue_app` schemas.
+instance with the `hubert` schemas.
 
 To seed the Cassandra instance, ensure your application is running (using
 `docker-compose up`) and run the following:
@@ -71,14 +71,14 @@ docker run -it --link hubert_cassandra_1:cassandra --rm hubert_cassandra sh -c '
 
 ## How It Works
 
-hubert automatically checks the status of your Hue lights every 30 or so seconds
+Hubert automatically checks the status of your Hue lights every 30 or so seconds
 and records the information to a Cassandra database. A python cron then reads
 the information and makes predictions on based on the current conditions.
 
 ### Learning
 
 The first few weeks of data collection are to train the linear regression model.
-hubert does not start altering the state of your lights until enough data
+Hubert does not start altering the state of your lights until enough data
 (currently 50,000 data points) has been collected and the rate of error is
 within an acceptable limit.
 
