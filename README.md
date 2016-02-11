@@ -1,6 +1,6 @@
-![He'll get the lights for you](asset/hubert-sm.jpg)
-
 # Hubert
+
+![He'll get the lights for you](asset/hubert-sm.jpg)
 
 _He'll get the lights for you._
 
