@@ -27,7 +27,11 @@ exports.register = (server, options, next) => {
       // Receive messages
       q.subscribe((message) => {
         const msg = message.data.toString()
+        const data = JSON.parse(msg);
         log.info('Received message: %s', msg)
+
+        // Change the light states
+        // @todo
       })
     })
 

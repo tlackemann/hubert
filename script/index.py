@@ -135,7 +135,6 @@ for light in lights:
             print '%.2f - "%s">> The time is %s' % (time.time(), light.name, right_now)
             print '@todo'
         else:
-            rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body='testing')
             print '%.2f - "%s">> Not enough data, nothing to do (%d observations)' % (time.time(), light.name, total_rows)
 
 
@@ -143,8 +142,11 @@ for light in lights:
         print '%.2f - "%s">> RSS too high, nothing to do' % (time.time(), light.name)
 
     prediction = clf.predict(right_now.hour)
-    predict_state = 'ON' if int(round(prediction[0][0])) else 'OFF'
+    state_int = int(round(prediction[0][0]))
+    predict_state = 'ON' if state_int else 'OFF'
     print '%.2f - "%s">> Predicting state of light is: %s (%s)' % (time.time(), light.name, predict_state, prediction[0][0])
+    state_message = json.dumps({ 'id': light.light_id, 'on': state_int })
+    rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body=state_message)
 
     print '%.2f - "%s">> Done processing light' % (time.time(), light.name)
 
