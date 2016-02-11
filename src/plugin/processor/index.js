@@ -36,7 +36,7 @@ exports.register = (server, options, next) => {
             log.info('Received message: %s', msg)
 
             // Change the light states
-            // @todo
+            // @todo - Check actual light state before modifying
             let state = lightState.create()
             if (messageState.on !== undefined) {
               if (messageState.on) {
