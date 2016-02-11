@@ -2,8 +2,6 @@
 
 _He'll get the lights for you._
 
-https://www.meethubert.com
-
 ## Description
 
 A web application to make the [Hue](http://meethue.com) lights in your house smarter.
