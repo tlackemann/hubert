@@ -119,7 +119,7 @@ folder.
 
 Hubert applies linear regression to build opinions on the states of your Hue
 lights. Python and [scikit-learn](http://scikit-learn.org/stable/) are used
-to build intelligence from the data the application collects. hubert is able
+to build intelligence from the data the application collects. Hubert is able
 to determine when your lights should be on or off and will automatically adjust
 these settings based on feedback given.
 
