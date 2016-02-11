@@ -4,6 +4,8 @@
 
 _He'll get the lights for you._
 
+![david-dm](https://david-dm.org/tlackemann/hubert.svg)
+
 ## Description
 
 A web application to make the [Hue](http://meethue.com) lights in your house
