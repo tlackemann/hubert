@@ -71,7 +71,7 @@ docker run -it --link hubert_cassandra_1:cassandra --rm hubert_cassandra sh -c '
 
 ## How It Works
 
-Hubert automatically checks the status of your Hue lights every 30 or so seconds
+Hubert automatically checks the status of your Hue lights every 10 seconds
 and records the information to a Cassandra database. A python cron then reads
 the information and makes predictions on based on the current conditions.
 
@@ -123,6 +123,17 @@ You can setup a cron by easily adding the following to your `crontab`
 
 We recommend running the machine learning algorithm every minute.
 
+## Configuration
+
+All configuration can be found in `config/default.json`. This project utilizes
+[config](https://www.npmjs.com/package/config) which allows you to override any
+configuration setting easily by creating an environment-specific `.json` file
+such as `config/production.json`.
+
+### Settings
+
+####
+
 ## Features
 
 * ~~Data collection~~ - *Done*
@@ -130,4 +141,4 @@ We recommend running the machine learning algorithm every minute.
 
 ## License
 
-MIT
+Apache 2.0
