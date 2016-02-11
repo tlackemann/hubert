@@ -58,8 +58,15 @@ Bridge. This can easily be done by following the below steps:
 2. Run `HUE_USER=my-cool-username npm run hue`
 3. Update `./config/default.json` with your new username
 
-A new user will automatically be created for you. Don't forget to update the
-config file, otherwise the application will not be able to communicate properly.
+A new user will automatically be created for you. Update the configuration
+file with the hash it generates, it will look something like this:
+
+```
+033a6feb77750dc770ec4a4487a9e8db
+```
+
+Don't forget to update the configuration file, otherwise the application
+will not be able to communicate properly.
 
 ### Seeding Cassandra Database
 
@@ -88,7 +95,7 @@ within an acceptable limit.
 
 ### Containers
 
-Hubert is composed of five containers.
+Hubert is composed of four containers.
 
  1. `hubert` - The main processor; Sends updates to Cassandra container; Processes RabbitMQ messages to alter the state of the lights
  2. `learn` - Machine learning algorithm; Learns from usage and sends messages to RabbitMQ for processing
