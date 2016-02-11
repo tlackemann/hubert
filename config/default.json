@@ -1,7 +1,7 @@
 {
   "app": {
     "port": "3000",
-    "checkInterval": "30000",
+    "checkInterval": "10000",
     "errorThreshold": "5",
     "minimumDataThreshold": "50000"
   },

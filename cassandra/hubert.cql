@@ -17,6 +17,7 @@ CREATE COLUMNFAMILY lights (
 -- Table: light_events
 CREATE COLUMNFAMILY light_events (
   light_id text,
+  unique_id text,
   state_on boolean,
   bri int,
   hue int,

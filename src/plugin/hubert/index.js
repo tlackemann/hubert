@@ -11,9 +11,6 @@ const log = new Log('hubert-worker')
 // Declare an interval that will check for the state of our lights every X ms
 let intervalGetLightState = false
 
-// Setup a reference for our API
-let api = {};
-
 // We can ignore errors up to a certain limit
 let errCount = config.app.errorThreshold
 
@@ -35,6 +32,7 @@ const handleError = (err) => {
 const saveLightStates = (lights) => {
   const columns = [
     'light_id',
+    'unique_id',
     'state_on',
     'bri',
     'hue',
@@ -50,19 +48,19 @@ const saveLightStates = (lights) => {
     'ts',
   ]
   const values = fill(clone(columns), '?')
-
-  const queries = map(lights, (light) => {
+  const queries = map(lights, (light, id) => {
     const q = [
       {
         query: `INSERT INTO lights (light_id, name) VALUES (?, ?)`,
         params: [
-          light.uniqueid,
+          id,
           light.name,
         ],
       },
       {
         query: `INSERT INTO light_events (${columns.join(',')}) VALUES (${values.join(',')})`,
         params: [
+          id,
           light.uniqueid,
           light.state.on,
           light.state.bri,
@@ -100,49 +98,27 @@ const saveLightStates = (lights) => {
   )
 }
 
-const getLightState = () => {
-  log.info('Getting light states')
-  api.getFullState()
-    .then((state) => saveLightStates(state.lights))
-    .catch(handleError)
-}
-
 exports.register = (server, options, next) => {
   log.info('Initializing worker ...')
 
-  // Find available bridges and use the first one
-  // @todo - Support for multiple bridges
-  hue.getDefaultBridge()
-    .then((bridge) => {
-      const ip = bridge.ipaddress
-      const username = config.hue.username
-
-      log.info('Attempting to establish a connection ...')
-      log.info('Connecting on %s with username "%s"', ip, username)
-
-      // Establish a connection with the bridge
-      api = hue.getConnection(ip, username)
-      return api.config()
-    })
-    .then((state) => {
-      // Check to make sure we've successfully authenticated
-      if (!state.whitelist) {
-        log.error('Successfully connected to the bridge however the user provided is incorrect.')
-        log.error('Check that "hue.user" provided in the configuration is correct')
-        throw new Error('Invalid User')
+  hue.connect()
+    .then((api) => {
+      function getLightState() {
+        log.info('Getting light states')
+        api.getFullState()
+          .then((state) => saveLightStates(state.lights))
+          .catch(handleError)
       }
 
-      // Let's get the lightbulbs now
-      log.info('Successfully connected to the bridge "%s"', state.name)
+      // Run once right away
+      getLightState()
 
-      // Start the interval
+      // Setup the interval to check every X seconds
       intervalGetLightState = setInterval(getLightState, config.app.checkInterval)
-
-      // Done, that's it
       next()
     })
     .catch((err) => {
-      log.error('An error occurred while initializing the Hue Monitor: %s', err)
+      log.error('An error occurred while initializing the worker: %s', err)
       log.error('Shutting down the application ...')
       return process.exit(1)
     })

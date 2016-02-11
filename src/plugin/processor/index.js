@@ -1,6 +1,8 @@
 // import cassandra from 'cassandra-driver'
 import config from 'config'
+import { lightState } from 'node-hue-api'
 import Log from './../../log'
+import hue from './../../hue'
 // import db from './../../cassandra'
 
 // Setup logger
@@ -19,23 +21,47 @@ exports.register = (server, options, next) => {
       autoDelete: false,
     }
 
-    // Use the default 'amq.topic' exchange
-    rabbitmq.queue(config.rabbitmq.queue, opts, (q) => {
-      log.info('Subscribed to %s', config.rabbitmq.queue)
-      // Catch all messages
-      q.bind('#')
-      // Receive messages
-      q.subscribe((message) => {
-        const msg = message.data.toString()
-        const data = JSON.parse(msg);
-        log.info('Received message: %s', msg)
+    // Connect to Hue
+    hue.connect()
+      .then((api) => {
+        // Use the default 'amq.topic' exchange
+        rabbitmq.queue(config.rabbitmq.queue, opts, (q) => {
+          log.info('Subscribed to %s', config.rabbitmq.queue)
+          // Catch all messages
+          q.bind('#')
+          // Receive messages
+          q.subscribe((message) => {
+            const msg = message.data.toString()
+            const messageState = JSON.parse(msg);
+            log.info('Received message: %s', msg)
 
-        // Change the light states
-        // @todo
+            // Change the light states
+            // @todo
+            let state = lightState.create()
+            if (messageState.on !== undefined) {
+              if (messageState.on) {
+                state.on()
+              } else {
+                state.off()
+              }
+              api.setLightState(messageState.id, state)
+                .then((result) => {
+                  log.info('Turned light "%s" %s', messageState.id, (messageState.on) ? 'ON' : 'OFF')
+                })
+                .catch((err) => {
+                  log.error('Problem turning light "%s" %s: %s', messageState.id, (messageState.on) ? 'ON' : 'OFF', err)
+                })
+            }
+          })
+        })
+
+        next()
       })
-    })
-
-    next()
+      .catch((err) => {
+        log.error('An error occurred while initializing the processor: %s', err)
+        log.error('Shutting down the application ...')
+        return process.exit(1)
+      })
   })
 
   rabbitmq.on('error', (err) => {

@@ -1,5 +1,6 @@
 import hue from 'node-hue-api'
 import Promise from 'bluebird'
+import config from 'config'
 import Log from './log'
 
 // Setup logger
@@ -47,8 +48,48 @@ function registerUser(ip, username) {
   })
 }
 
+function connect() {
+  return new Promise((res, rej) => {
+    let api = {}
+
+    getDefaultBridge()
+      .then((bridge) => {
+        const ip = bridge.ipaddress
+        const username = config.hue.username
+
+        log.info('Attempting to establish a connection ...')
+        log.info('Connecting on %s with username "%s"', ip, username)
+
+        // Establish a connection with the bridge
+        api = this.getConnection(ip, username)
+        return api.config()
+      })
+      .then((state) => {
+        // Check to make sure we've successfully authenticated
+        if (!state.whitelist) {
+          log.error('Successfully connected to the bridge however the user provided is incorrect.')
+          log.error('Check that "hue.user" provided in the configuration is correct')
+          throw new Error('Invalid User')
+        }
+
+        // Let's get the lightbulbs now
+        log.info('Successfully connected to the bridge "%s"', state.name)
+
+        // Start the interval
+        // intervalGetLightState = setInterval(getLightState, config.app.checkInterval)
+
+        // Done, that's it
+        res(api)
+      })
+      .catch((err) => {
+        rej(err)
+      })
+  })
+}
+
 export default {
   getConnection,
   getDefaultBridge,
   registerUser,
+  connect
 }
