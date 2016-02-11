@@ -6,4 +6,5 @@ const connection = new AmqpConnection({
   login: config.rabbitmq.login,
   password: config.rabbitmq.password,
 })
-export default connection
+
+module.exports = connection

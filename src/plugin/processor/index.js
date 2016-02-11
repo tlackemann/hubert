@@ -1,14 +1,14 @@
 // import cassandra from 'cassandra-driver'
 import config from 'config'
 import Log from './../../log'
-import rabbitmq from './../../rabbitmq'
 // import db from './../../cassandra'
 
 // Setup logger
 const log = new Log('hubert-processor')
 
-
 exports.register = (server, options, next) => {
+  const rabbitmq = require('./../../rabbitmq')
+
   log.info('Initializing processor ...')
 
   // Wait for connection to become established.
@@ -29,8 +29,13 @@ exports.register = (server, options, next) => {
         const msg = message.data.toString()
         log.info('Received message: %s', msg)
       })
-      next()
     })
+
+    next()
+  })
+
+  rabbitmq.on('error', (err) => {
+    next(err)
   })
 }
 

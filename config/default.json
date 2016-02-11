@@ -9,7 +9,7 @@
     "username": "59acd3ee04378737288552274697ab"
   },
   "rabbitmq": {
-    "host": "hubert.rabbitmq",
+    "host": "hubert",
     "queue": "hubert_events",
     "login": "hubert",
     "password": "hubert"
