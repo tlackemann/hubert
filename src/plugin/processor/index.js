@@ -1,6 +1,5 @@
 // import cassandra from 'cassandra-driver'
 import config from 'config'
-import { lightState } from 'node-hue-api'
 import Log from './../../log'
 import hue from './../../hue'
 // import db from './../../cassandra'
@@ -37,19 +36,17 @@ exports.register = (server, options, next) => {
 
             // Change the light states
             // @todo - Check actual light state before modifying
-            let state = lightState.create()
+            let state = {}
             if (messageState.on !== undefined) {
-              if (messageState.on) {
-                state.on()
-              } else {
-                state.off()
-              }
+              state.on = Boolean(messageState.on)
+
+              const onOrOff = (state.on) ? 'ON' : 'OFF';
               api.setLightState(messageState.id, state)
                 .then((result) => {
-                  log.info('Turned light "%s" %s', messageState.id, (messageState.on) ? 'ON' : 'OFF')
+                  log.info('Turned light "%s" %s', messageState.id, onOrOff)
                 })
                 .catch((err) => {
-                  log.error('Problem turning light "%s" %s: %s', messageState.id, (messageState.on) ? 'ON' : 'OFF', err)
+                  log.error('Problem turning light "%s" %s: %s', messageState.id, onOrOff, err)
                 })
             }
           })

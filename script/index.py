@@ -2,13 +2,18 @@
 import json
 import time
 import calendar
-from datetime import datetime, timedelta
-from time import sleep
 import numpy as np
 import cassandra
-from sklearn import linear_model, datasets
-from cassandra.cluster import Cluster
 import pika
+from datetime import datetime, timedelta
+from time import sleep
+from sklearn.metrics import mean_squared_error
+from sklearn import datasets
+from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Ridge
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.pipeline import make_pipeline
+from cassandra.cluster import Cluster
 
 start_time = time.time()
 print '%.2f - Initializing ...' % (time.time())
@@ -103,19 +108,42 @@ for light in lights:
     # Create a linear regression on the indv. light
     if total_rows < LR_LOWER_LIMIT:
         print '%.2f - "%s">> Using Ridge Regression' % (time.time(), light.name)
-        clf = linear_model.Ridge()
+        # clf = linear_model.Ridge()
+        # clf.fit(X_train, Y_train)
     else:
         print '%.2f - "%s">> Using Linear Regression' % (time.time(), light.name)
-        clf = linear_model.LinearRegression()
+        # clf = linear_model.LinearRegression()
+        # clf.fit(X_train, Y_train)
 
-    clf.fit(X_train, Y_train)
 
+    # Find the optimal polynomial degree
+    train_error = np.empty(10)
+    test_error = np.empty(10)
+    for degree in range(10):
+        # Find the optimal l2_penalty/alpha
+        alpha_train_error = np.empty(4)
+        alpha_test_error = np.empty(4)
+        for alpha in [0.0, 1e-8, 1e-5, 1e-1]:
+            est = make_pipeline(PolynomialFeatures(degree), Ridge(alpha=alpha))
+            est.fit(X_train, Y_train)
+            # Training error
+            alpha_train_error[alpha] = mean_squared_error(Y_train, est.predict(X_train))
+            # Test error
+            alpha_test_error[alpha] = mean_squared_error(Y_test, est.predict(X_test))
+        # @todo - Choose the lowest alpha
+
+        train_error[degree] = mean_squared_error(Y_train, est.predict(X_train))
+        test_error[degree] = mean_squared_error(Y_test, est.predict(X_test))
+        # @todo - Find the lowest test_error
+
+    print test_error
     # Print some useful information
-    rss = np.mean((clf.predict(X_test) - Y_test) ** 2)
-    variance = clf.score(X_test, Y_test)
-    print '%.2f - "%s">> Coefficients: %s' % (time.time(), light.name, clf.coef_)
-    print '%.2f - "%s">> Residual sum of squares: %.2f' % (time.time(), light.name, rss)
-    print '%.2f - "%s">> Variance score: %.2f' % (time.time(), light.name, variance) # 1 is perfect prediction
+    rss = 0
+    # rss = np.mean((clf.predict(X_test) - Y_test) ** 2)
+    # variance = clf.score(X_test, Y_test)
+    # print '%.2f - "%s">> Coefficients: %s' % (time.time(), light.name, clf.coef_)
+    # print '%.2f - "%s">> Residual sum of squares: %.2f' % (time.time(), light.name, rss)
+    # print '%.2f - "%s">> Variance score: %.2f' % (time.time(), light.name, variance) # 1 is perfect prediction
 
     # EXPERIMENTAL
     right_now = datetime.now()
@@ -141,12 +169,12 @@ for light in lights:
     else:
         print '%.2f - "%s">> RSS too high, nothing to do' % (time.time(), light.name)
 
-    prediction = clf.predict(right_now.hour)
-    state_int = int(round(prediction[0][0]))
-    predict_state = 'ON' if state_int else 'OFF'
-    print '%.2f - "%s">> Predicting state of light is: %s (%s)' % (time.time(), light.name, predict_state, prediction[0][0])
-    state_message = json.dumps({ 'id': light.light_id, 'on': state_int })
-    rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body=state_message)
+    # prediction = clf.predict(right_now.hour)
+    # state_int = int(round(prediction[0][0]))
+    # predict_state = 'ON' if state_int else 'OFF'
+    # print '%.2f - "%s">> Predicting state of light is: %s (%s)' % (time.time(), light.name, predict_state, prediction[0][0])
+    # state_message = json.dumps({ 'id': light.light_id, 'on': state_int })
+    # rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body=state_message)
 
     print '%.2f - "%s">> Done processing light' % (time.time(), light.name)
 
