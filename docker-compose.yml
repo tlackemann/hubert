@@ -1,12 +1,16 @@
 # Hubert (Main listener)
 hubert:
-  build: . 
+  build: .
   links:
     - cassandra
     - rabbitmq:hubert
   volumes:
     - .:/usr/src/app
   command: ./bin/hubert
+  ports:
+    - "3000:3000"
+  expose:
+    - "3000"
 
 # Hubert Machine Learning
 learn:
