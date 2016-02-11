@@ -35,8 +35,7 @@ Then install the application by running:
 cd hubert && npm install && npm run build
 ```
 
-This will install all required modules, compile the source code, and build the
-front-end application.
+This will install all required modules and compile the source code.
 
 ### Running
 
