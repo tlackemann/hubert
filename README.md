@@ -130,10 +130,6 @@ All configuration can be found in `config/default.json`. This project utilizes
 configuration setting easily by creating an environment-specific `.json` file
 such as `config/production.json`.
 
-### Settings
-
-####
-
 ## Features
 
 * ~~Data collection~~ - *Done*
