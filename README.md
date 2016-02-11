@@ -89,7 +89,7 @@ within an acceptable limit.
 
 ### Containers
 
-Hubert is composed of five applications, each ran from an individual container.
+Hubert is composed of five containers.
 
  1. `hubert` - The main processor; Sends updates to Cassandra container; Processes RabbitMQ messages to alter the state of the lights
  2. `learn` - Machine learning algorithm; Learns from usage and sends messages to RabbitMQ for processing
@@ -98,9 +98,9 @@ Hubert is composed of five applications, each ran from an individual container.
 
 ## Development
 
-The Docker container for this application runs [nodemon]() to reboot the instance
-whenever a file is changed. Since it's faster to run ES5 code (currently) we
-need to compile ES6 down to ES5.
+The Docker container for the node.js applications use [nodemon]() to reboot the
+instance whenever a file is changed. Since it's faster to run ES5 code
+(currently) we need to compile ES6 down to ES5.
 
 ```
 npm run dev
