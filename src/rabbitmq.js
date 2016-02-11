@@ -1,7 +1,7 @@
-import amqp from 'amqp'
+import { createConnection as AmqpConnection } from 'amqp'
 import config from 'config'
 
-const connection = new amqp.createConnection({
+const connection = new AmqpConnection({
   host: config.rabbitmq.host,
   login: config.rabbitmq.login,
   password: config.rabbitmq.password,

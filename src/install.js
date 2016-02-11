@@ -10,13 +10,13 @@ const username = process.env.HUE_USER || 'hue-app-user';
 // Create the user
 hue.getDefaultBridge()
   .then((bridge) => {
-    return hue.registerUser(
+    const user = hue.registerUser(
       bridge.ipaddress,
       username
     )
+    return user
   })
   .then((user) => {
-    console.log(user)
     log.info('User created: %s (%s)', username, user)
     log.info('Done!')
   })

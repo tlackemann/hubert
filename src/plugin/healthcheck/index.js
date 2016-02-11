@@ -2,7 +2,7 @@
 exports.register = (server, options, next) => {
   server.route({
     method: 'GET',
-    path: '/',
+    path: '/healthcheck',
     handler: (request, reply) => {
       reply('OK')
     },

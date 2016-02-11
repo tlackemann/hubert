@@ -1,6 +1,6 @@
 # Hubert (Main listener)
 hubert:
-  build: worker/
+  build: . 
   links:
     - cassandra
     - rabbitmq:hubert

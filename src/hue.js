@@ -1,6 +1,5 @@
 import hue from 'node-hue-api'
 import Promise from 'bluebird'
-import config from 'config'
 import Log from './log'
 
 // Setup logger
@@ -8,7 +7,7 @@ const log = new Log('hubert-hue')
 
 const HueApi = hue.HueApi;
 
-const getDefaultBridge = () => {
+function getDefaultBridge() {
   return new Promise((res, rej) => {
     hue.nupnpSearch((err, result) => {
       if (err) {
@@ -29,11 +28,11 @@ const getDefaultBridge = () => {
   })
 }
 
-const getConnection = (ip, username) => {
+function getConnection(ip, username) {
   return new HueApi(ip, username)
 }
 
-const registerUser = (ip, username) => {
+function registerUser(ip, username) {
   return new Promise((res, rej) => {
     const hpi = new HueApi();
     log.info('Registering user: %s', username)

@@ -1,5 +1,8 @@
 import cassandra from 'cassandra-driver'
 import config from 'config'
+import Log from './log'
+
+const log = new Log('hubert-cassandra')
 
 // Connect to Cassandra
 const db = new cassandra.Client({
@@ -11,5 +14,8 @@ const db = new cassandra.Client({
   ),
 })
 
+db.on('connect', () => {
+  log.info('Cassandra connected')
+})
 
 export default db

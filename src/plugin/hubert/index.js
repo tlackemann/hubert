@@ -1,5 +1,4 @@
 import config from 'config'
-import Promise from 'bluebird'
 import { clone, map, fill, flatten } from 'lodash'
 import cassandra from 'cassandra-driver'
 import db from './../../cassandra'
@@ -8,6 +7,9 @@ import hue from './../../hue'
 
 // Setup logger
 const log = new Log('hubert-worker')
+
+// Declare an interval that will check for the state of our lights every X ms
+let intervalGetLightState = false
 
 // Setup a reference for our API
 let api = {};
@@ -50,12 +52,12 @@ const saveLightStates = (lights) => {
   const values = fill(clone(columns), '?')
 
   const queries = map(lights, (light) => {
-    return [
+    const q = [
       {
         query: `INSERT INTO lights (light_id, name) VALUES (?, ?)`,
         params: [
           light.uniqueid,
-          light.name
+          light.name,
         ],
       },
       {
@@ -76,8 +78,9 @@ const saveLightStates = (lights) => {
           light.name,
           cassandra.types.TimeUuid.now(),
         ],
-      }
+      },
     ]
+    return q
   })
 
   // Save this stuff
@@ -97,9 +100,6 @@ const saveLightStates = (lights) => {
   )
 }
 
-// Declare an interval that will check for the state of our lights every X ms
-let intervalGetLightState = false
-
 const getLightState = () => {
   log.info('Getting light states')
   api.getFullState()
@@ -108,7 +108,7 @@ const getLightState = () => {
 }
 
 exports.register = (server, options, next) => {
-  log.info('Initializing Hue Monitor')
+  log.info('Initializing worker ...')
 
   // Find available bridges and use the first one
   // @todo - Support for multiple bridges
@@ -129,7 +129,7 @@ exports.register = (server, options, next) => {
       if (!state.whitelist) {
         log.error('Successfully connected to the bridge however the user provided is incorrect.')
         log.error('Check that "hue.user" provided in the configuration is correct')
-        throw 'Invalid User'
+        throw new Error('Invalid User')
       }
 
       // Let's get the lightbulbs now

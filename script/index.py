@@ -26,7 +26,7 @@ rmq_channel.queue_declare(queue=RABBITMQ_QUEUE)
 print '%.2f - Connecting to Cassandra ...' % (time.time())
 # Connect to Cassandra
 cluster = Cluster(['cassandra'])
-session = cluster.connect('hue_app')
+session = cluster.connect('hubert')
 
 print '%.2f - Fetching lights ...' % (time.time())
 lights = session.execute('SELECT * FROM lights')

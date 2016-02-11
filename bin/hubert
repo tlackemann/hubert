@@ -1,2 +1,2 @@
 #!/bin/bash
-node dist/index.js
+nodemon -L dist/index.js
