@@ -29,7 +29,7 @@ Use git to checkout the repository:
 git checkout https://github.com/tlackemann/hubert.git hubert
 ```
 
-You can then install the application by running:
+Then install the application by running:
 
 ```
 cd hubert && npm install && npm run build
