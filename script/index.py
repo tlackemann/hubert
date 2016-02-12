@@ -1,4 +1,21 @@
 #!/usr/bin/python
+
+##
+# Hubert
+# This script fetches light event data from Cassandra, normalizes it, and runs
+# it against a ridge regresssion model to gain predictive intelligence on
+# future light events.
+#
+# The algorithm searches for the best polynomial fit and ridge alpha based on
+# the mean_squared_error. The degree and alpha with the lowest
+# mean_squared_error is then used to make a prediction for a light based on the
+# current hour.
+#
+# Disclaimer: I am an absolute beginner at machine learning. For all I know
+# this algorithm is fundamentally flawed. I'm open to feedback and suggestions
+# via pull requests or by opening an issue on GitHub.
+##
+
 import operator
 import json
 import time
