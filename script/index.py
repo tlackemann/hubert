@@ -142,16 +142,13 @@ for light in lights:
             tmp_alpha_train_error = mean_squared_error(Y_train, est.predict(X_train))
             # Test error
             tmp_alpha_test_error = mean_squared_error(Y_test, est.predict(X_test))
-
             # Is it the lowest one?
-            if final_train_error == False or abs(tmp_test_error) < final_test_error:
+            if final_est == False or abs(tmp_alpha_test_error) < final_test_error:
                 final_est = est
                 final_alpha = alpha
                 final_degree = degree
-
-        # Now that we have the lowest
-        final_train_error = mean_squared_error(Y_train, final_est.predict(X_train))
-        final_test_error = mean_squared_error(Y_test, final_est.predict(X_test))
+                final_test_error = tmp_alpha_test_error
+                final_train_error = tmp_alpha_train_error
 
     print '%.2f - "%s">> Best training error: %.6f' % (time.time(), light.name, final_train_error)
     print '%.2f - "%s">> Best test error: %.6f' % (time.time(), light.name, final_test_error)
@@ -160,10 +157,8 @@ for light in lights:
     # Print some useful information
     rss = final_test_error
     # rss = np.mean((clf.predict(X_test) - Y_test) ** 2)
-    variance = final_est.score(X_test, Y_test)
     # print '%.2f - "%s">> Coefficients: %s' % (time.time(), light.name, final_est.coef_)
     print '%.2f - "%s">> Residual sum of squares: %.2f' % (time.time(), light.name, rss)
-    print '%.2f - "%s">> Variance score: %.2f' % (time.time(), light.name, variance) # 1 is perfect prediction
 
     # EXPERIMENTAL
     right_now = datetime.now()
@@ -177,7 +172,9 @@ for light in lights:
             print final_est.predict(right_now.hour)
             # @todo - Send a message to RabbitMQ to change the state of the light
             # A worker will then pick up the message and process the result
-            # rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body='testing')
+            # state_message = json.dumps({ 'id': light.light_id, 'on': state_int })
+            # rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body=state_message)
+        # Also alter the sat, hue, bri, etc
         elif total_rows >= LR_UPPER_LIMIT:
             print '%.2f - "%s">> Modifying state of light ...' % (time.time(), light.name)
             print '%.2f - "%s">> The time is %s' % (time.time(), light.name, right_now)
@@ -189,13 +186,13 @@ for light in lights:
     else:
         print '%.2f - "%s">> RSS too high, nothing to do' % (time.time(), light.name)
 
+    # @todo this will be moved above under total_rows >= LR_UPPER_LIMIT
+    # this is for testing with all amounts of data
     prediction = final_est.predict(right_now.hour)
     state_int = int(round(prediction[0][0]))
     predict_state = 'ON' if state_int else 'OFF'
-    print '%.2f - "%s">> Predicting state of light is: %s (%s)' % (time.time(), light.name, predict_state, prediction[0][0])
-    state_message = json.dumps({ 'id': light.light_id, 'on': state_int })
-    # rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body=state_message)
-
+    confidence = final_est.score(X_test, Y_test) # 1 is perfect prediction
+    print '%.2f - "%s">> Predicting state of light is: %s (Confidence: %.2f)' % (time.time(), light.name, predict_state, confidence)
     print '%.2f - "%s">> Done processing light' % (time.time(), light.name)
 
 # Done!
