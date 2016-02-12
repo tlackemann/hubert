@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import operator
 import json
 import time
 import calendar
@@ -105,45 +106,46 @@ for light in lights:
     Y_train = Y[:-20]
     Y_test = Y[-20:]
 
-    # Create a linear regression on the indv. light
-    if total_rows < LR_LOWER_LIMIT:
-        print '%.2f - "%s">> Using Ridge Regression' % (time.time(), light.name)
-        # clf = linear_model.Ridge()
-        # clf.fit(X_train, Y_train)
-    else:
-        print '%.2f - "%s">> Using Linear Regression' % (time.time(), light.name)
-        # clf = linear_model.LinearRegression()
-        # clf.fit(X_train, Y_train)
-
-
     # Find the optimal polynomial degree
-    train_error = np.empty(10)
-    test_error = np.empty(10)
+    final_est = False
+    final_degree = 0
+    final_alpha = 0.
+    final_train_error = False
+    final_test_error = False
     for degree in range(10):
+        print '%.2f - "%s">> Fitting %s polynomial-degree ...' % (time.time(), light.name, degree)
         # Find the optimal l2_penalty/alpha
-        alpha_train_error = np.empty(4)
-        alpha_test_error = np.empty(4)
+        tmp_train_error = False
+        tmp_test_error = False
         for alpha in [0.0, 1e-8, 1e-5, 1e-1]:
             est = make_pipeline(PolynomialFeatures(degree), Ridge(alpha=alpha))
             est.fit(X_train, Y_train)
             # Training error
-            alpha_train_error[alpha] = mean_squared_error(Y_train, est.predict(X_train))
+            tmp_alpha_train_error = mean_squared_error(Y_train, est.predict(X_train))
             # Test error
-            alpha_test_error[alpha] = mean_squared_error(Y_test, est.predict(X_test))
-        # @todo - Choose the lowest alpha
+            tmp_alpha_test_error = mean_squared_error(Y_test, est.predict(X_test))
 
-        train_error[degree] = mean_squared_error(Y_train, est.predict(X_train))
-        test_error[degree] = mean_squared_error(Y_test, est.predict(X_test))
-        # @todo - Find the lowest test_error
+            # Is it the lowest one?
+            if final_train_error == False or abs(tmp_test_error) < final_test_error:
+                final_est = est
+                final_alpha = alpha
+                final_degree = degree
 
-    print test_error
+        # Now that we have the lowest
+        final_train_error = mean_squared_error(Y_train, final_est.predict(X_train))
+        final_test_error = mean_squared_error(Y_test, final_est.predict(X_test))
+
+    print '%.2f - "%s">> Final training error: %.6f' % (time.time(), light.name, final_train_error)
+    print '%.2f - "%s">> Final test error: %.6f' % (time.time(), light.name, final_test_error)
+    print '%.2f - "%s">> Using degree=%s and alpha=%s for ridge regression algorithm' % (time.time(), light.name, final_degree, final_alpha)
+    # print test_error
     # Print some useful information
-    rss = 0
+    rss = final_test_error
     # rss = np.mean((clf.predict(X_test) - Y_test) ** 2)
-    # variance = clf.score(X_test, Y_test)
-    # print '%.2f - "%s">> Coefficients: %s' % (time.time(), light.name, clf.coef_)
-    # print '%.2f - "%s">> Residual sum of squares: %.2f' % (time.time(), light.name, rss)
-    # print '%.2f - "%s">> Variance score: %.2f' % (time.time(), light.name, variance) # 1 is perfect prediction
+    variance = final_est.score(X_test, Y_test)
+    # print '%.2f - "%s">> Coefficients: %s' % (time.time(), light.name, final_est.coef_)
+    print '%.2f - "%s">> Residual sum of squares: %.2f' % (time.time(), light.name, rss)
+    print '%.2f - "%s">> Variance score: %.2f' % (time.time(), light.name, variance) # 1 is perfect prediction
 
     # EXPERIMENTAL
     right_now = datetime.now()
@@ -154,7 +156,7 @@ for light in lights:
             print '%.2f - "%s">> Modifying state of light ...' % (time.time(), light.name)
             print '%.2f - "%s">> The time is %s' % (time.time(), light.name, right_now)
             print '%.2f - "%s">> Predicting for hour %s' % (time.time(), light.name, right_now.hour)
-            print clf.predict(right_now.hour)
+            print final_est.predict(right_now.hour)
             # @todo - Send a message to RabbitMQ to change the state of the light
             # A worker will then pick up the message and process the result
             # rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body='testing')
@@ -169,11 +171,11 @@ for light in lights:
     else:
         print '%.2f - "%s">> RSS too high, nothing to do' % (time.time(), light.name)
 
-    # prediction = clf.predict(right_now.hour)
-    # state_int = int(round(prediction[0][0]))
-    # predict_state = 'ON' if state_int else 'OFF'
-    # print '%.2f - "%s">> Predicting state of light is: %s (%s)' % (time.time(), light.name, predict_state, prediction[0][0])
-    # state_message = json.dumps({ 'id': light.light_id, 'on': state_int })
+    prediction = final_est.predict(right_now.hour)
+    state_int = int(round(prediction[0][0]))
+    predict_state = 'ON' if state_int else 'OFF'
+    print '%.2f - "%s">> Predicting state of light is: %s (%s)' % (time.time(), light.name, predict_state, prediction[0][0])
+    state_message = json.dumps({ 'id': light.light_id, 'on': state_int })
     # rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body=state_message)
 
     print '%.2f - "%s">> Done processing light' % (time.time(), light.name)
