@@ -129,8 +129,9 @@ for light in lights:
     final_alpha = 0.
     final_train_error = False
     final_test_error = False
+
+    print '%.2f - "%s">> Starting algorithm ...' % (time.time(), light.name)
     for degree in range(10):
-        print '%.2f - "%s">> Fitting %s polynomial-degree ...' % (time.time(), light.name, degree)
         # Find the optimal l2_penalty/alpha
         tmp_train_error = False
         tmp_test_error = False
@@ -152,8 +153,8 @@ for light in lights:
         final_train_error = mean_squared_error(Y_train, final_est.predict(X_train))
         final_test_error = mean_squared_error(Y_test, final_est.predict(X_test))
 
-    print '%.2f - "%s">> Final training error: %.6f' % (time.time(), light.name, final_train_error)
-    print '%.2f - "%s">> Final test error: %.6f' % (time.time(), light.name, final_test_error)
+    print '%.2f - "%s">> Best training error: %.6f' % (time.time(), light.name, final_train_error)
+    print '%.2f - "%s">> Best test error: %.6f' % (time.time(), light.name, final_test_error)
     print '%.2f - "%s">> Using degree=%s and alpha=%s for ridge regression algorithm' % (time.time(), light.name, final_degree, final_alpha)
     # print test_error
     # Print some useful information
