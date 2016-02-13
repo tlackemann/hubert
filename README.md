@@ -21,7 +21,17 @@ threshold.
 
 For more information, see [How It Works](#how-it-works).
 
-## Installation
+## Setup
+
+Installation is relatively straight-forward however somewhat cumbersome. I'm
+working on implementing a better system.
+
+### Dependencies
+
+* [Node.js](http://nodejs.org)
+* [Docker](https://docker.com/)
+
+### Installation
 
 Use git to checkout the repository:
 
@@ -36,18 +46,6 @@ cd hubert && npm install && npm run build
 ```
 
 This will install all required modules and compile the source code.
-
-### Running
-
-This application is designed to be started with [Docker](https://docker.com/).
-
-You can start the application by running:
-
-```
-docker-compose up
-```
-
-This will start all the instances necessary to run Hubert.
 
 ### Creating Hue Bridge User
 
@@ -73,12 +71,27 @@ will not be able to communicate properly.
 In addition to creating a bridge user, you'll also need to seed a Cassandra
 instance with the `hubert` schemas.
 
-To seed the Cassandra instance, ensure your application is running (using
-`docker-compose up`) and run the following:
+To seed the Cassandra instance, start the Cassandra container by running:
+
+```
+docker-compose up cassandra
+```
+
+Then run the following to seed the necessary schemas:
 
 ```
 docker run -it --link hubert_cassandra_1:cassandra --rm hubert_cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR" -f /docker/hubert.cql'
 ```
+
+## Running
+
+Start the application by running:
+
+```
+docker-compose up
+```
+
+This will start all the instances containers for Hubert.
 
 ## How It Works
 
@@ -102,19 +115,6 @@ Hubert is composed of four containers.
  3. `rabbitmq` - A RabbitMQ instance used for publish-subscribe
  4. `cassandra` - A Cassandra instance used for data collection
 
-## Development
-
-The Docker container for the node.js applications use [nodemon]() to reboot the
-instance whenever a file is changed. Since it's faster to run ES5 code
-(currently) we need to compile ES6 down to ES5.
-
-```
-npm run dev
-```
-
-This will setup a listener on the `src/` folder to compile into the `dist/`
-folder.
-
 ### Machine Learning Cron
 
 Hubert applies linear regression to build opinions on the states of your Hue
@@ -134,7 +134,20 @@ You can setup a cron by easily adding the following to your `crontab`
 
 We recommend running the machine learning algorithm every minute.
 
-## Configuration
+## Development
+
+The Docker container for the node.js applications use [nodemon]() to reboot the
+instance whenever a file is changed. Since it's faster to run ES5 code
+(currently) we need to compile ES6 down to ES5.
+
+```
+npm run dev
+```
+
+This will setup a listener on the `src/` folder to compile into the `dist/`
+folder.
+
+### Configuration
 
 All configuration can be found in `config/default.json`. This project utilizes
 [config](https://www.npmjs.com/package/config) which allows you to override any
