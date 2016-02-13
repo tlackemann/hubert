@@ -47,9 +47,9 @@ cd hubert && npm install && npm run build
 
 This will install all required modules and compile the source code.
 
-### Creating Hue Bridge User
+### Create Hue Bridge User
 
-In order to use this application, you'll need to register it with your Hue
+In order to use this application, you'll first need to register it with your Hue
 Bridge. This can easily be done by following the below steps:
 
 1. Press the 'link' button on your Hue Bridge
@@ -66,7 +66,7 @@ file with the hash it generates, it will look something like this:
 Don't forget to update the configuration file, otherwise the application
 will not be able to communicate properly.
 
-### Seeding Cassandra Database
+### Seed Cassandra Database
 
 In addition to creating a bridge user, you'll also need to seed a Cassandra
 instance with the `hubert` schemas.
@@ -91,7 +91,7 @@ Start the application by running:
 docker-compose up
 ```
 
-This will start all the instances containers for Hubert.
+This will start all containers necessary to run Hubert.
 
 ## How It Works
 
