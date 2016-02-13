@@ -75,6 +75,14 @@ for light in lights:
     print '%.2f - "%s">> Fetched %s total rows' % (time.time(), light.name, total_rows)
 
     # Loop over each light and store the data in X and Y
+    # @todo - Make this algorithm smarter
+    # - 1440 minutes in day
+    # Phase I: Train by minutes in day (2 days+)
+    # - if >2 days <14 days - break down by minutes in day
+    # Phase II: Train by minutes in week (14 days+)
+    # - if >=14 days <60 days - break down by minutes in week
+    # Phase III: Train by minutes in month (2 months+)
+    # if >=60 days - break down by minutes in month
     for event in light_events:
         # Get the datetime of the event
         event_time = cassandra.util.datetime_from_uuid1(event.ts)
@@ -194,6 +202,8 @@ for light in lights:
     confidence = final_est.score(X_test, Y_test) # 1 is perfect prediction
     print '%.2f - "%s">> Predicting state of light is: %s (Confidence: %.2f)' % (time.time(), light.name, predict_state, confidence)
     print '%.2f - "%s">> Done processing light' % (time.time(), light.name)
+    state_message = json.dumps({ 'id': light.light_id, 'on': state_int })
+    rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body=state_message)
 
 # Done!
 end_time = time.time()
