@@ -1,2 +1,2 @@
 #!/bin/bash
-docker-compose up learn
+docker run -it --link hubert_cassandra_1:cassandra --link hubert_rabbitmq_1:hubert.rabbitmq hubert_learn:latest

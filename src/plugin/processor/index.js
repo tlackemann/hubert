@@ -55,19 +55,23 @@ exports.register = (server, options, next) => {
                     const newValue = messageState[s]
                     if ((s !== 'xy' && newValue !== currentValue) || (s === 'xy' && !isEqual(newValue, currentValue))) {
                       newState[s] = newValue
-                      log.info({ light_id: lightId }, 'Updating "%s": was %s, now %s', s, currentValue, newValue)
+                      log.info({ light_id: lightId }, '"%s": was %s, now %s', s, currentValue, newValue)
                     }
                   })
-
-                  // Now update the light
-                  api.setLightState(lightId, newState)
-                    .then((result) => {
-                      console.log(result)
-                      log.error({ light_id: lightId }, 'Successfully updated light')
-                    })
-                    .catch((err) => {
-                      log.error({ light_id: lightId }, 'Problem saving current light state: %s', err)
-                    })
+                  // We should only up if the light is on or going to be on
+                  if (newState.on || state.on) {
+                    // Now update the light
+                    api.setLightState(lightId, newState)
+                      .then((result) => {
+                        console.log(result)
+                        log.info({ light_id: lightId }, 'Successfully updated light')
+                      })
+                      .catch((err) => {
+                        log.error({ light_id: lightId }, 'Problem saving current light state: %s', err)
+                      })
+                  } else {
+                    log.info({ light_id: lightId }, 'Skipping update because light is off')
+                  }
                 } else {
                   log.info({ light_id: lightId }, 'States for light %s are equal, nothing to do', lightId)
                 }
@@ -78,7 +82,6 @@ exports.register = (server, options, next) => {
 
           })
         })
-
         next()
       })
       .catch((err) => {

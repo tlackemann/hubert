@@ -74,6 +74,22 @@ Then run the following to seed the necessary schemas:
 docker run -it --link hubert_cassandra_1:cassandra --rm hubert_cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR" -f /docker/hubert.cql'
 ```
 
+### Create Machine Learning Cron
+
+Finally, build the machine learning container so that we can execute it as a
+cron.
+
+```
+docker build -t hubert_learn:latest script/
+```
+
+Now add the following to your `crontab` (make sure to update `/path/to/hubert`
+with the correct folder):
+
+```
+* * * * * /path/to/hubert/bin/learn
+```
+
 ## Running
 
 Start the application by running:

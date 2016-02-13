@@ -13,14 +13,14 @@ hubert:
     - "3000"
 
 # Hubert Machine Learning
-learn:
-  build: script/
-  links:
-    - cassandra
-    - rabbitmq:hubert.rabbitmq
-  volumes:
-    - ./script:/usr/src/app
-  command: python index.py
+# learn:
+#   build: script/
+#   links:
+#     - cassandra
+#     - rabbitmq:hubert.rabbitmq
+#   volumes:
+#     - ./script:/usr/src/app
+#   command: python index.py
 
 # RabbitMQ
 rabbitmq:
