@@ -37,8 +37,7 @@ start_time = time.time()
 print '%.2f - Initializing ...' % (time.time())
 
 RABBITMQ_QUEUE = 'hubert_events'
-LR_LOWER_LIMIT = 20158
-LR_UPPER_LIMIT = 40316
+CQL_LIMIT = 1000000
 
 print '%.2f - Connecting to RabbitMQ ...' % (time.time())
 rmq_credentials = pika.PlainCredentials('hubert', 'hubert')
@@ -63,26 +62,33 @@ for light in lights:
     Y = []
     # Now load all the events for this light
     sql = 'SELECT light_id, state_on, reachable, bri, hue, sat, x, y, ts FROM light_events WHERE light_id = %s ORDER BY ts DESC LIMIT %s'
-    light_events = session.execute(sql, [light.light_id, LR_UPPER_LIMIT])
+    light_events = session.execute(sql, [light.light_id, CQL_LIMIT])
     # We need to know how many rows there are, this is stupid but it works
     # The reasone is because of how cassandra driver works - it will not fetch
     # all rows but rather the first 5000 and then rely on fetch_next_page()
     # or require a for loop. Since that is just stupid, there's this ...
     sql_count = 'SELECT count(*) as c FROM light_events WHERE light_id = %s ORDER BY ts DESC LIMIT %s'
-    light_event_count = session.execute(sql_count, [light.light_id, LR_UPPER_LIMIT])
+    light_event_count = session.execute(sql_count, [light.light_id, CQL_LIMIT])
     total_rows = light_event_count.current_rows[0].c
 
     print '%.2f - "%s">> Fetched %s total rows' % (time.time(), light.name, total_rows)
+    # Determine how much time has passed
+    most_recent_time = cassandra.util.datetime_from_uuid1(light_events[0].ts)
+    first_time = cassandra.util.datetime_from_uuid1(light_events[total_rows - 1].ts)
+    total_recorded_time = most_recent_time - first_time
+    time_format = '%Y-%m-%d %H:%M:%S'
+    print '%.2f - "%s">> Observing %s - %s (%s)' % (time.time(), light.name, first_time.strftime(time_format), most_recent_time.strftime(time_format), total_recorded_time)
 
     # Loop over each light and store the data in X and Y
-    # @todo - Make this algorithm smarter
-    # - 1440 minutes in day
-    # Phase I: Train by minutes in day (2 days+)
-    # - if >2 days <14 days - break down by minutes in day
-    # Phase II: Train by minutes in week (14 days+)
-    # - if >=14 days <60 days - break down by minutes in week
-    # Phase III: Train by minutes in month (2 months+)
-    # if >=60 days - break down by minutes in month
+    minutes_in_day = 1440
+    recordings_per_minute = 6 # @todo - Expects default setting to record every 10 seconds
+    recordings_per_day = minutes_in_day * recordings_per_minute
+
+    # Store the conditionals for our phases
+    phase_1_condition = total_rows < recordings_per_day * 14
+    phase_2_condition = total_rows >= recordings_per_day * 14 and total_rows < recordings_per_day * 60
+
+    print '%.2f - "%s">> Preparing to format data ...' % (time.time(), light.name)
     for event in light_events:
         # Get the datetime of the event
         event_time = cassandra.util.datetime_from_uuid1(event.ts)
@@ -96,32 +102,28 @@ for light in lights:
         # Depending on the amount of data we have, we're going to build the
         # linear regression model slightly different to get the best performance
         # out of the model.
-        #
-        # <= LR_LOWER_LIMIT - Look at predictions by 'hour'
-        # >= LR_UPPER_LIMIT - Look at predictions by 'week_hour'
-        if total_rows < LR_LOWER_LIMIT:
-            # X - hour
-            X.append([current_hour])
-            # Features: state
-            Y.append([event_state])
-        elif total_rows >= LR_LOWER_LIMIT and total_rows < LR_UPPER_LIMIT:
-            # X - hour
-            X.append([current_hour])
-            # Features: state, hue, bri, sat
-            Y.append([event_state, event.hue, event.bri, event.sat])
+
+        # Phase I: Train by minutes in day (2 days+)
+        # X = Total amount of minutes passed on recorded day (0-1439)
+        if phase_1_condition:
+            X.append([(current_hour * 60) + current_minute])
+
+        # Phase II: Train by minutes in week (14 days+)
+        # X = Total amount of minutes passed during recorded week (0-10079)
+        elif phase_2_condition:
+            if day_of_week > 0:
+                X.append([((current_hour * 60) + current_minute) * day_of_week])
+            else:
+                X.append([(current_hour * 60) + current_minute])
+
+        # Phase III: Train by minutes in month (2 months+)
+        # X = Total amount of minutes passed during recorded month (0-x)
         else:
-            # "Week Minute" (0-10079 based scale based on how many minutes in a week)
-            # 1440 = Minutes in a day
-            # Formula: [(weekday * 1440) + (hour * 60) + minute]
-            # e.g.
-            # Monday 12:00am = (0 * 1440) + (0 * 60) + 0 = 0
-            # Monday 1:00am = (0 * 1440) + (1 * 60) + 0 = 59
-            # Tuesday 12:00am = (1 * 1440) + (0 * 60) + 0 = 1339
-            # Sunday 11:59pm = (6 * 1440) + (23 * 60) + 59 = 8640 + 1380 + 59 = 10079
-            week_hour = (day_of_week * 1440) + (current_hour * 60) + current_minute
-            X.append([week_hour])
-            # Features: state, hue, bri, sat, x, y
-            Y.append([event_state, event.hue, event.bri, event.sat, event.x, event.y])
+            # @todo
+            print '@todo'
+
+        # Features: state, hue, bri, sat, x, y
+        Y.append([event_state, event.hue, event.bri, event.sat, event.x, event.y])
 
     # Split the data into training/testing sets
     X_train = X[:-20]
@@ -138,11 +140,9 @@ for light in lights:
     final_train_error = False
     final_test_error = False
 
-    print '%.2f - "%s">> Starting algorithm ...' % (time.time(), light.name)
+    print '%.2f - "%s">> Finding best fit for ridge regression model ...' % (time.time(), light.name)
     for degree in range(10):
         # Find the optimal l2_penalty/alpha
-        tmp_train_error = False
-        tmp_test_error = False
         for alpha in [0.0, 1e-8, 1e-5, 1e-1]:
             est = make_pipeline(PolynomialFeatures(degree), Ridge(alpha=alpha))
             est.fit(X_train, Y_train)
@@ -158,52 +158,47 @@ for light in lights:
                 final_test_error = tmp_alpha_test_error
                 final_train_error = tmp_alpha_train_error
 
+    rss = final_test_error
+    print '%.2f - "%s">> Using degree=%s and alpha=%s for ridge regression algorithm' % (time.time(), light.name, final_degree, final_alpha)
     print '%.2f - "%s">> Best training error: %.6f' % (time.time(), light.name, final_train_error)
     print '%.2f - "%s">> Best test error: %.6f' % (time.time(), light.name, final_test_error)
-    print '%.2f - "%s">> Using degree=%s and alpha=%s for ridge regression algorithm' % (time.time(), light.name, final_degree, final_alpha)
-    # print test_error
-    # Print some useful information
-    rss = final_test_error
-    # rss = np.mean((clf.predict(X_test) - Y_test) ** 2)
-    # print '%.2f - "%s">> Coefficients: %s' % (time.time(), light.name, final_est.coef_)
     print '%.2f - "%s">> Residual sum of squares: %.2f' % (time.time(), light.name, rss)
 
-    # EXPERIMENTAL
+    # Now that we've run our model, let's determine if we should alter the state
+    # of the lights
     right_now = datetime.now()
+
     # 70% is passing by my standards, try and alter the state of this light
     if rss < 0.3:
-        # If we have enough observations, start to play with the lights
-        if total_rows >= LR_LOWER_LIMIT and total_rows < LR_UPPER_LIMIT:
+        # Make sure we have enough observations
+        if phase_1_condition:
+            prediction_minutes = (right_now.hour * 60) + right_now.minute
+            prediction = final_est.predict(prediction_minutes)
+            state_on_int = int(round(prediction[0][0]))
+            predict_state = 'ON' if state_on_int else 'OFF'
+            confidence = final_est.score(X_test, Y_test) # 1 is perfect prediction
+            state_message = json.dumps({ 'id': light.light_id, 'on': state_on_int })
+            rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body=state_message)
             print '%.2f - "%s">> Modifying state of light ...' % (time.time(), light.name)
             print '%.2f - "%s">> The time is %s' % (time.time(), light.name, right_now)
-            print '%.2f - "%s">> Predicting for hour %s' % (time.time(), light.name, right_now.hour)
-            print final_est.predict(right_now.hour)
-            # @todo - Send a message to RabbitMQ to change the state of the light
-            # A worker will then pick up the message and process the result
-            # state_message = json.dumps({ 'id': light.light_id, 'on': state_int })
-            # rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body=state_message)
-        # Also alter the sat, hue, bri, etc
-        elif total_rows >= LR_UPPER_LIMIT:
-            print '%.2f - "%s">> Modifying state of light ...' % (time.time(), light.name)
-            print '%.2f - "%s">> The time is %s' % (time.time(), light.name, right_now)
+            print '%.2f - "%s">> Predicting current minute %s/%s' % (time.time(), light.name, prediction_minutes, minutes_in_day - 1)
+            print '%.2f - "%s">> Predicting state of light is: %s (Confidence: %.2f)' % (time.time(), light.name, predict_state, confidence)
+
+        elif phase_2_condition:
             print '@todo'
         else:
             print '%.2f - "%s">> Not enough data, nothing to do (%d observations)' % (time.time(), light.name, total_rows)
 
-
+    # RSS too high
     else:
         print '%.2f - "%s">> RSS too high, nothing to do' % (time.time(), light.name)
 
-    # @todo this will be moved above under total_rows >= LR_UPPER_LIMIT
-    # this is for testing with all amounts of data
-    prediction = final_est.predict(right_now.hour)
-    state_int = int(round(prediction[0][0]))
-    predict_state = 'ON' if state_int else 'OFF'
-    confidence = final_est.score(X_test, Y_test) # 1 is perfect prediction
-    print '%.2f - "%s">> Predicting state of light is: %s (Confidence: %.2f)' % (time.time(), light.name, predict_state, confidence)
     print '%.2f - "%s">> Done processing light' % (time.time(), light.name)
-    state_message = json.dumps({ 'id': light.light_id, 'on': state_int })
-    rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body=state_message)
+
+# @todo - Save the weights of the algorithm to feed in later, this is going to
+# get *super* expensive to run every single minute for anything over 5+ lights
+#
+# Testing with 20k+ rows + 5 lights takes ~14 seconds to complete
 
 # Done!
 end_time = time.time()
