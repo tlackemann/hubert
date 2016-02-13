@@ -105,7 +105,8 @@ has been collected and the mean squared error is within an acceptable limit.
 
 Hubert's algorithm is simple in that it loops over a range of polynomials (0-9)
 and a range of alphas (`0.0, 1e-8, 1e-5, 1e-1`) to determine the fit that
-best minimizes the test error.
+best minimizes the test error. There are plans to implement k-fold
+cross-validation or something similar to best fit smaller amounts of data.
 
 **Disclaimer:** Python and Machine Learning are both very new to me. I always
 welcome and appreciate constructive feedback.
