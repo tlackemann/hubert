@@ -11,13 +11,11 @@ _He'll get the lights for you._
 A web application to make the [Hue](http://meethue.com) lights in your house
 smarter.
 
-Hubert learns from your light usage patterns. Over time, Hubert will determine
-when your lights should be on or off or even what color they should be. It does
-this by logging the state of your lights every so often and running the data
-against a multiple regression model. Hubert will only change the state of your
-lights once it has determined enough data has been collected and the error rate
-(calculate by determining the residual sum of squares, RSS) is within a certain
-threshold.
+Hubert learns from your light usage patterns. It does this by logging the state
+of your lights every so often and running the data against a ridge regression
+model. Hubert will only start changing the state of your lights once it has
+determined enough data has been collected and the error rate (calculate by
+the mean squared error) is within a certain threshold.
 
 For more information, see [How It Works](#how-it-works).
 
@@ -101,10 +99,16 @@ the information and makes predictions on based on the current conditions.
 
 ### Learning
 
-The first few weeks of data collection are to train the linear regression model.
+The first few weeks of data collection are to train the ridge regression model.
 Hubert does not start altering the state of your lights until enough data
-(currently 50,000 data points) has been collected and the rate of error is
-within an acceptable limit.
+has been collected and the mean squared error is within an acceptable limit.
+
+Hubert's algorithm is simple in that it loops over a range of polynomials (0-9)
+and a range of alphas (`0.0, 1e-8, 1e-5, 1e-1`) to determine the fit that
+best minimizes the test error.
+
+**Disclaimer:** Python and Machine Learning are both very new to me. I always
+welcome and appreciate constructive feedback.
 
 ### Containers
 
@@ -153,11 +157,6 @@ All configuration can be found in `config/default.json`. This project utilizes
 [config](https://www.npmjs.com/package/config) which allows you to override any
 configuration setting easily by creating an environment-specific `.json` file
 such as `config/production.json`.
-
-## Features
-
-* ~~Data collection~~ - *Done*
-* Linear regression algorithm - *In progress*
 
 ## License
 
