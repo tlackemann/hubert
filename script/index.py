@@ -182,11 +182,9 @@ for light in lights:
                 'hue': int(prediction[0][1]),
                 'bri': int(prediction[0][2]),
                 'sat': int(prediction[0][3]),
-                'x': prediction[0][4],
-                'y': prediction[0][5]
+                'xy': [ round(prediction[0][4], 4), round(prediction[0][5], 4) ]
             }
             state_message = json.dumps(predicted_state)
-            rmq_channel.basic_publish(exchange='',routing_key=RABBITMQ_QUEUE,body=state_message)
             print '%.2f - "%s">> Modifying state of light ...' % (time.time(), light.name)
             print '%.2f - "%s">> The time is %s' % (time.time(), light.name, right_now)
             print '%.2f - "%s">> Predicting for current minute %s/%s' % (time.time(), light.name, prediction_minutes, minutes_in_day - 1)
@@ -194,8 +192,7 @@ for light in lights:
             print '%.2f - "%s">> Predicting hue: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['hue'], confidence)
             print '%.2f - "%s">> Predicting bri: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['bri'], confidence)
             print '%.2f - "%s">> Predicting sat: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['sat'], confidence)
-            print '%.2f - "%s">> Predicting x: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['x'], confidence)
-            print '%.2f - "%s">> Predicting y: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['y'], confidence)
+            print '%.2f - "%s">> Predicting xy: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['xy'], confidence)
             # Update the state of our light
             rmq_channel.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE, body=state_message)
         elif phase_2_condition:

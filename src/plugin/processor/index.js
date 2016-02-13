@@ -1,5 +1,6 @@
 // import cassandra from 'cassandra-driver'
 import config from 'config'
+import { pick, isEqual, each } from 'lodash'
 import Log from './../../log'
 import hue from './../../hue'
 // import db from './../../cassandra'
@@ -31,24 +32,50 @@ exports.register = (server, options, next) => {
           // Receive messages
           q.subscribe((message) => {
             const msg = message.data.toString()
-            const messageState = JSON.parse(msg);
-            log.info('Received message: %s', msg)
+            const messageStatus = JSON.parse(msg);
+            const lightId = messageStatus.id
+            log.info({ light_id: lightId }, 'Received message')
 
             // Change the light states
             // @todo - Check actual light state before modifying
-            let state = {}
-            if (messageState.on !== undefined) {
-              state.on = Boolean(messageState.on)
+            log.info({ light_id: lightId }, 'Fetching the state of Light ID: %s', lightId)
+            api.lightStatus(lightId)
+              .then((status) => {
+                const requiredStates = ['on', 'bri', 'hue', 'sat', 'xy']
+                const state = pick(status.state, requiredStates)
+                const messageState = pick(messageStatus, requiredStates)
+                // Compare against message state
+                const equal = isEqual(state, messageState)
+                let newState = {}
+                if (!equal) {
+                  log.info({ light_id: lightId }, 'States for light %s are not equal', lightId)
+                  // Let's identify what is different
+                  each(requiredStates, (s) => {
+                    const currentValue = state[s]
+                    const newValue = messageState[s]
+                    if ((s !== 'xy' && newValue !== currentValue) || (s === 'xy' && !isEqual(newValue, currentValue))) {
+                      newState[s] = newValue
+                      log.info({ light_id: lightId }, 'Updating "%s": was %s, now %s', s, currentValue, newValue)
+                    }
+                  })
 
-              const onOrOff = (state.on) ? 'ON' : 'OFF';
-              api.setLightState(messageState.id, state)
-                .then((result) => {
-                  log.info('Turned light "%s" %s', messageState.id, onOrOff)
-                })
-                .catch((err) => {
-                  log.error('Problem turning light "%s" %s: %s', messageState.id, onOrOff, err)
-                })
-            }
+                  // Now update the light
+                  api.setLightState(lightId, newState)
+                    .then((result) => {
+                      console.log(result)
+                      log.error({ light_id: lightId }, 'Successfully updated light')
+                    })
+                    .catch((err) => {
+                      log.error({ light_id: lightId }, 'Problem saving current light state: %s', err)
+                    })
+                } else {
+                  log.info({ light_id: lightId }, 'States for light %s are equal, nothing to do', lightId)
+                }
+              })
+              .catch((err) => {
+                log.error({ light_id: lightId }, 'Problem fetching current light state: %s', err)
+              })
+
           })
         })
 
