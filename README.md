@@ -8,14 +8,7 @@ _He'll get the lights for you._
 
 ## Description
 
-A web application to make the [Hue](http://meethue.com) lights in your house
-smarter.
-
-Hubert learns from your light usage patterns. It does this by logging the state
-of your lights every so often and running the data against a ridge regression
-model. Hubert will only start changing the state of your lights once it has
-determined enough data has been collected and the error rate (calculate by
-the mean squared error) is within a certain threshold.
+A Nest-inspired application for the [Phillips Hue](http://meethue.com).
 
 For more information, see [How It Works](#how-it-works).
 
@@ -93,8 +86,13 @@ This will start all containers necessary to run Hubert.
 
 ## How It Works
 
-Hubert automatically checks the status of your Hue lights every 10 seconds
-and records the information to a Cassandra database. A python cron then reads
+Hubert learns from your light usage patterns. It does this by logging the state
+of your lights every so often and running the data against a ridge regression
+model. Hubert will only start changing the state of your lights once it has
+determined enough data has been collected and the error rate (calculate by
+the mean squared error) is within a certain threshold.
+
+All information is recorded to a Cassandra database. A python cron then reads
 the information and makes predictions on based on the current conditions.
 
 ### Learning
