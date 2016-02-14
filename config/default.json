@@ -24,5 +24,12 @@
   },
   "log": {
     "level": "debug"
+  },
+  "twilio": {
+    "enabled": "false",
+    "number": "YOUR_ACCOUNT_NUMBER",
+    "to": "YOUR_PHONE_NUMBER",
+    "sid": "YOUR_ACCOUNT_SID",
+    "token": "YOUR_ACCOUNT_TOKEN"
   }
 }

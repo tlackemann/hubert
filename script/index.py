@@ -84,13 +84,6 @@ for light in lights:
 
     # We need at least a week's worth of data before we start predicting
     if total_rows >= recordings_per_day * 7:
-        # Determine how much time has passed
-        most_recent_time = cassandra.util.datetime_from_uuid1(light_events[0].ts)
-        first_time = cassandra.util.datetime_from_uuid1(light_events[total_rows - 1].ts)
-        total_recorded_time = most_recent_time - first_time
-        time_format = '%Y-%m-%d %H:%M:%S'
-        print '%.2f - "%s">> Observing %s - %s (%s)' % (time.time(), light.name, first_time.strftime(time_format), most_recent_time.strftime(time_format), total_recorded_time)
-
         print '%.2f - "%s">> Preparing to format data ...' % (time.time(), light.name)
         for event in light_events:
             # Get the datetime of the event
@@ -130,7 +123,7 @@ for light in lights:
                     eq = eq * day_of_week
                 if current_day > 0:
                     eq = eq * current_day
-            X.append([eq])
+                X.append([eq])
             # Features: state, hue, bri, sat, x, y
             Y.append([event_state, event.hue, event.bri, event.sat, event.x, event.y])
 
@@ -179,7 +172,6 @@ for light in lights:
 
         # 70% is passing by my standards, try and alter the state of this light
         if rss < 0.3:
-            prediction = False
             # Make sure we have enough observations
             if phase_1_condition:
                 # Predict based on the current minute
@@ -202,28 +194,27 @@ for light in lights:
                     prediction_minutes = prediction_minutes * right_now.day
                 prediction = final_est.predict(prediction_minutes)
 
-            if prediction:
-                # Features: state, hue, bri, sat, x, y
-                confidence = final_est.score(X_test, Y_test) # 1 is perfect prediction
-                predicted_state = {
-                    'id': light.light_id,
-                    'on': True if int(round(prediction[0][0])) == 1 else False,
-                    'hue': int(prediction[0][1]),
-                    'bri': int(prediction[0][2]),
-                    'sat': int(prediction[0][3]),
-                    'xy': [ round(prediction[0][4], 4), round(prediction[0][5], 4) ]
-                }
-                state_message = json.dumps(predicted_state)
-                print '%.2f - "%s">> Modifying state of light ...' % (time.time(), light.name)
-                print '%.2f - "%s">> The time is %s' % (time.time(), light.name, right_now)
-                print '%.2f - "%s">> Predicting for current minute %s/%s' % (time.time(), light.name, prediction_minutes, minutes_in_day - 1)
-                print '%.2f - "%s">> Predicting state: %s (Confidence: %.2f)' % (time.time(), light.name, 'ON' if predicted_state['on'] else 'OFF', confidence)
-                print '%.2f - "%s">> Predicting hue: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['hue'], confidence)
-                print '%.2f - "%s">> Predicting bri: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['bri'], confidence)
-                print '%.2f - "%s">> Predicting sat: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['sat'], confidence)
-                print '%.2f - "%s">> Predicting xy: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['xy'], confidence)
-                # Update the state of our light
-                rmq_channel.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE, body=state_message)
+            # Features: state, hue, bri, sat, x, y
+            confidence = final_est.score(X_test, Y_test) # 1 is perfect prediction
+            predicted_state = {
+                'id': light.light_id,
+                'on': True if int(round(prediction[0][0])) == 1 else False,
+                'hue': int(prediction[0][1]),
+                'bri': int(prediction[0][2]),
+                'sat': int(prediction[0][3]),
+                'xy': [ round(prediction[0][4], 4), round(prediction[0][5], 4) ]
+            }
+            state_message = json.dumps(predicted_state)
+            print '%.2f - "%s">> Modifying state of light ...' % (time.time(), light.name)
+            print '%.2f - "%s">> The time is %s' % (time.time(), light.name, right_now)
+            print '%.2f - "%s">> Predicting for current minute %s/%s' % (time.time(), light.name, prediction_minutes, minutes_in_day - 1)
+            print '%.2f - "%s">> Predicting state: %s (Confidence: %.2f)' % (time.time(), light.name, 'ON' if predicted_state['on'] else 'OFF', confidence)
+            print '%.2f - "%s">> Predicting hue: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['hue'], confidence)
+            print '%.2f - "%s">> Predicting bri: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['bri'], confidence)
+            print '%.2f - "%s">> Predicting sat: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['sat'], confidence)
+            print '%.2f - "%s">> Predicting xy: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['xy'], confidence)
+            # Update the state of our light
+            rmq_channel.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE, body=state_message)
 
         # RSS too high
         else:

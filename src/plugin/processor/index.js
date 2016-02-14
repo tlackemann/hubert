@@ -1,5 +1,6 @@
 // import cassandra from 'cassandra-driver'
 import config from 'config'
+import twilio from 'twilio'
 import { pick, isEqual, each } from 'lodash'
 import Log from './../../log'
 import hue from './../../hue'
@@ -12,6 +13,7 @@ exports.register = (server, options, next) => {
   const rabbitmq = require('./../../rabbitmq')
 
   log.info('Initializing processor ...')
+  log.info('Twilio enabled: %s', (config.twilio.enabled) ? 'True' : 'False')
 
   // Wait for connection to become established.
   rabbitmq.on('ready', () => {
@@ -50,12 +52,16 @@ exports.register = (server, options, next) => {
                 if (!equal) {
                   log.info({ light_id: lightId }, 'States for light %s are not equal', lightId)
                   // Let's identify what is different
+                  let twilioLogs = []
                   each(requiredStates, (s) => {
                     const currentValue = state[s]
                     const newValue = messageState[s]
                     if ((s !== 'xy' && newValue !== currentValue) || (s === 'xy' && !isEqual(newValue, currentValue))) {
                       newState[s] = newValue
                       log.info({ light_id: lightId }, '"%s": was %s, now %s', s, currentValue, newValue)
+                      if (Boolean(config.twilio.enabled)) {
+                        twilioLogs.push(`${s}: was ${currentValue}, now ${newValue}`)
+                      }
                     }
                   })
                   // We should only up if the light is on or going to be on
@@ -65,6 +71,24 @@ exports.register = (server, options, next) => {
                       .then((result) => {
                         console.log(result)
                         log.info({ light_id: lightId }, 'Successfully updated light')
+
+                        // Sending a message to the configured phone number
+                        // Initialize to Twilio
+                        if (Boolean(config.twilio.enabled)) {
+                          log.info({ light_id: lightId }, 'Twilio is enabled')
+                          const twilioClient = new twilio.RestClient(config.twilio.sid, config.twilio.token);
+                          twilioClient.sms.messages.create({
+                            to: config.twilio.to,
+                            from: config.twilio.number,
+                            body: `Updated state of Light ${lightId}\n---\n${twilioLogs.join('\n')}`
+                          }, (error, message) => {
+                            if (error) {
+                              log.error({ light_id: lightId }, 'There was a problem sending message with Twilio: %s', error)
+                            } else {
+                              log.info({ light_id: lightId }, 'Successfully updated numbers %s via Twilio', config.twilio.to)
+                            }
+                          })
+                        }
                       })
                       .catch((err) => {
                         log.error({ light_id: lightId }, 'Problem saving current light state: %s', err)
