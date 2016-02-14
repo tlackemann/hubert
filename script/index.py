@@ -179,10 +179,30 @@ for light in lights:
 
         # 70% is passing by my standards, try and alter the state of this light
         if rss < 0.3:
+            prediction = False
             # Make sure we have enough observations
             if phase_1_condition:
+                # Predict based on the current minute
                 prediction_minutes = (right_now.hour * 60) + right_now.minute
                 prediction = final_est.predict(prediction_minutes)
+            elif phase_2_condition:
+                # Predict based on the current minute in the week
+                prediction_minutes = (right_now.hour * 60) + right_now.minute
+                right_now_weekday = right_now.weekday()
+                if right_now_weekday > 0:
+                    prediction_minutes = prediction_minutes * right_now_weekday
+                prediction = final_est.predict(prediction_minutes)
+            else:
+                # Predict based on the current minute in the month
+                prediction_minutes = (right_now.hour * 60) + right_now.minute
+                right_now_weekday = right_now.weekday()
+                if right_now_weekday > 0:
+                    prediction_minutes = prediction_minutes * right_now_weekday
+                if right_now.day > 0:
+                    prediction_minutes = prediction_minutes * right_now.day
+                prediction = final_est.predict(prediction_minutes)
+
+            if prediction:
                 # Features: state, hue, bri, sat, x, y
                 confidence = final_est.score(X_test, Y_test) # 1 is perfect prediction
                 predicted_state = {
@@ -204,10 +224,6 @@ for light in lights:
                 print '%.2f - "%s">> Predicting xy: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['xy'], confidence)
                 # Update the state of our light
                 rmq_channel.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE, body=state_message)
-            elif phase_2_condition:
-                print '@todo'
-            else:
-                print '%.2f - "%s">> Not enough data, nothing to do (%d observations)' % (time.time(), light.name, total_rows)
 
         # RSS too high
         else:
