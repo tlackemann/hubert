@@ -13,7 +13,7 @@ exports.register = (server, options, next) => {
   const rabbitmq = require('./../../rabbitmq')
 
   log.info('Initializing processor ...')
-  log.info('Twilio enabled: %s', (config.twilio.enabled) ? 'True' : 'False')
+  log.info('Twilio enabled: %s', (Boolean(config.twilio.enabled)) ? 'True' : 'False')
 
   // Wait for connection to become established.
   rabbitmq.on('ready', () => {

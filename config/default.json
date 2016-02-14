@@ -26,7 +26,7 @@
     "level": "debug"
   },
   "twilio": {
-    "enabled": "false",
+    "enabled": false,
     "number": "YOUR_ACCOUNT_NUMBER",
     "to": "YOUR_PHONE_NUMBER",
     "sid": "YOUR_ACCOUNT_SID",
