@@ -173,6 +173,12 @@ All configuration can be found in `config/default.json`. This project utilizes
 configuration setting easily by creating an environment-specific `.json` file
 such as `config/production.json`.
 
+#### Twilio
+
+**Experimental:** Hubert integrates with Twilio to alert you when the state of
+your light has changed. To enable Twilio, simply update the configuration file
+with your Twilio credentials.
+
 ## License
 
     Copyright 2016 Thomas Lackemann
