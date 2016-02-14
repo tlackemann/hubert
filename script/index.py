@@ -72,12 +72,6 @@ for light in lights:
     total_rows = light_event_count.current_rows[0].c
 
     print '%.2f - "%s">> Fetched %s total rows' % (time.time(), light.name, total_rows)
-    # Determine how much time has passed
-    most_recent_time = cassandra.util.datetime_from_uuid1(light_events[0].ts)
-    first_time = cassandra.util.datetime_from_uuid1(light_events[total_rows - 1].ts)
-    total_recorded_time = most_recent_time - first_time
-    time_format = '%Y-%m-%d %H:%M:%S'
-    print '%.2f - "%s">> Observing %s - %s (%s)' % (time.time(), light.name, first_time.strftime(time_format), most_recent_time.strftime(time_format), total_recorded_time)
 
     # Loop over each light and store the data in X and Y
     minutes_in_day = 1440
@@ -88,124 +82,134 @@ for light in lights:
     phase_1_condition = total_rows < recordings_per_day * 14
     phase_2_condition = total_rows >= recordings_per_day * 14 and total_rows < recordings_per_day * 60
 
-    print '%.2f - "%s">> Preparing to format data ...' % (time.time(), light.name)
-    for event in light_events:
-        # Get the datetime of the event
-        event_time = cassandra.util.datetime_from_uuid1(event.ts)
-        # Monday is 0 and Sunday is 6
-        day_of_week = event_time.weekday()
-        current_hour = event_time.hour
-        current_minute = event_time.minute
-        # Light is ON if it's both reachable and declared on
-        event_state = 1 if (event.reachable and event.state_on) else 0
+    # We need at least a week's worth of data before we start predicting
+    if total_rows >= recordings_per_day * 7:
+        # Determine how much time has passed
+        most_recent_time = cassandra.util.datetime_from_uuid1(light_events[0].ts)
+        first_time = cassandra.util.datetime_from_uuid1(light_events[total_rows - 1].ts)
+        total_recorded_time = most_recent_time - first_time
+        time_format = '%Y-%m-%d %H:%M:%S'
+        print '%.2f - "%s">> Observing %s - %s (%s)' % (time.time(), light.name, first_time.strftime(time_format), most_recent_time.strftime(time_format), total_recorded_time)
 
-        # Depending on the amount of data we have, we're going to build the
-        # linear regression model slightly different to get the best performance
-        # out of the model.
+        print '%.2f - "%s">> Preparing to format data ...' % (time.time(), light.name)
+        for event in light_events:
+            # Get the datetime of the event
+            event_time = cassandra.util.datetime_from_uuid1(event.ts)
+            # Monday is 0 and Sunday is 6
+            day_of_week = event_time.weekday()
+            current_hour = event_time.hour
+            current_minute = event_time.minute
+            # Light is ON if it's both reachable and declared on
+            event_state = 1 if (event.reachable and event.state_on) else 0
 
-        # Phase I: Train by minutes in day (2 days+)
-        # X = Total amount of minutes passed on recorded day (0-1439)
-        if phase_1_condition:
-            X.append([(current_hour * 60) + current_minute])
+            # Depending on the amount of data we have, we're going to build the
+            # linear regression model slightly different to get the best performance
+            # out of the model.
 
-        # Phase II: Train by minutes in week (14 days+)
-        # X = Total amount of minutes passed during recorded week (0-10079)
-        elif phase_2_condition:
-            if day_of_week > 0:
-                X.append([((current_hour * 60) + current_minute) * day_of_week])
-            else:
+            # Phase I: Train by minutes in day (2 days+)
+            # X = Total amount of minutes passed on recorded day (0-1439)
+            if phase_1_condition:
                 X.append([(current_hour * 60) + current_minute])
 
-        # Phase III: Train by minutes in month (2 months+)
-        # X = Total amount of minutes passed during recorded month (0-x)
-        else:
-            # @todo
-            print '@todo'
+            # Phase II: Train by minutes in week (14 days+)
+            # X = Total amount of minutes passed during recorded week (0-10079)
+            elif phase_2_condition:
+                if day_of_week > 0:
+                    X.append([((current_hour * 60) + current_minute) * day_of_week])
+                else:
+                    X.append([(current_hour * 60) + current_minute])
 
-        # Features: state, hue, bri, sat, x, y
-        Y.append([event_state, event.hue, event.bri, event.sat, event.x, event.y])
+            # Phase III: Train by minutes in month (2 months+)
+            # X = Total amount of minutes passed during recorded month (0-x)
+            else:
+                # @todo
+                print '@todo'
 
-    # Split the data into training/testing sets
-    X_train = X[:-20]
-    X_test = X[-20:]
-
-    # Split the targets into training/testing sets
-    Y_train = Y[:-20]
-    Y_test = Y[-20:]
-
-    # Find the optimal polynomial degree
-    final_est = False
-    final_degree = 0
-    final_alpha = 0.
-    final_train_error = False
-    final_test_error = False
-
-    print '%.2f - "%s">> Finding best fit for ridge regression model ...' % (time.time(), light.name)
-    for degree in range(10):
-        # Find the optimal l2_penalty/alpha
-        for alpha in [0.0, 1e-8, 1e-5, 1e-1]:
-            est = make_pipeline(PolynomialFeatures(degree), Ridge(alpha=alpha))
-            est.fit(X_train, Y_train)
-            # Training error
-            tmp_alpha_train_error = mean_squared_error(Y_train, est.predict(X_train))
-            # Test error
-            tmp_alpha_test_error = mean_squared_error(Y_test, est.predict(X_test))
-            # Is it the lowest one?
-            if final_est == False or abs(tmp_alpha_test_error) < final_test_error:
-                final_est = est
-                final_alpha = alpha
-                final_degree = degree
-                final_test_error = tmp_alpha_test_error
-                final_train_error = tmp_alpha_train_error
-
-    rss = final_test_error
-    print '%.2f - "%s">> Using degree=%s and alpha=%s for ridge regression algorithm' % (time.time(), light.name, final_degree, final_alpha)
-    print '%.2f - "%s">> Best training error: %.6f' % (time.time(), light.name, final_train_error)
-    print '%.2f - "%s">> Best test error: %.6f' % (time.time(), light.name, final_test_error)
-    print '%.2f - "%s">> Residual sum of squares: %.2f' % (time.time(), light.name, rss)
-
-    # Now that we've run our model, let's determine if we should alter the state
-    # of the lights
-    right_now = datetime.now()
-
-    # 70% is passing by my standards, try and alter the state of this light
-    if rss < 0.3:
-        # Make sure we have enough observations
-        if phase_1_condition:
-            prediction_minutes = (right_now.hour * 60) + right_now.minute
-            prediction = final_est.predict(prediction_minutes)
             # Features: state, hue, bri, sat, x, y
-            confidence = final_est.score(X_test, Y_test) # 1 is perfect prediction
-            predicted_state = {
-                'id': light.light_id,
-                'on': True if int(round(prediction[0][0])) == 1 else False,
-                'hue': int(prediction[0][1]),
-                'bri': int(prediction[0][2]),
-                'sat': int(prediction[0][3]),
-                'xy': [ round(prediction[0][4], 4), round(prediction[0][5], 4) ]
-            }
-            state_message = json.dumps(predicted_state)
-            print '%.2f - "%s">> Modifying state of light ...' % (time.time(), light.name)
-            print '%.2f - "%s">> The time is %s' % (time.time(), light.name, right_now)
-            print '%.2f - "%s">> Predicting for current minute %s/%s' % (time.time(), light.name, prediction_minutes, minutes_in_day - 1)
-            print '%.2f - "%s">> Predicting state: %s (Confidence: %.2f)' % (time.time(), light.name, 'ON' if predicted_state['on'] else 'OFF', confidence)
-            print '%.2f - "%s">> Predicting hue: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['hue'], confidence)
-            print '%.2f - "%s">> Predicting bri: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['bri'], confidence)
-            print '%.2f - "%s">> Predicting sat: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['sat'], confidence)
-            print '%.2f - "%s">> Predicting xy: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['xy'], confidence)
-            # Update the state of our light
-            rmq_channel.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE, body=state_message)
-        elif phase_2_condition:
-            print '@todo'
+            Y.append([event_state, event.hue, event.bri, event.sat, event.x, event.y])
+
+        # Split the data into training/testing sets
+        X_train = X[:-20]
+        X_test = X[-20:]
+
+        # Split the targets into training/testing sets
+        Y_train = Y[:-20]
+        Y_test = Y[-20:]
+
+        # Find the optimal polynomial degree
+        final_est = False
+        final_degree = 0
+        final_alpha = 0.
+        final_train_error = False
+        final_test_error = False
+
+        print '%.2f - "%s">> Finding best fit for ridge regression model ...' % (time.time(), light.name)
+        for degree in range(10):
+            # Find the optimal l2_penalty/alpha
+            for alpha in [0.0, 1e-8, 1e-5, 1e-1]:
+                est = make_pipeline(PolynomialFeatures(degree), Ridge(alpha=alpha))
+                est.fit(X_train, Y_train)
+                # Training error
+                tmp_alpha_train_error = mean_squared_error(Y_train, est.predict(X_train))
+                # Test error
+                tmp_alpha_test_error = mean_squared_error(Y_test, est.predict(X_test))
+                # Is it the lowest one?
+                if final_est == False or abs(tmp_alpha_test_error) < final_test_error:
+                    final_est = est
+                    final_alpha = alpha
+                    final_degree = degree
+                    final_test_error = tmp_alpha_test_error
+                    final_train_error = tmp_alpha_train_error
+
+        rss = final_test_error
+        print '%.2f - "%s">> Using degree=%s and alpha=%s for ridge regression algorithm' % (time.time(), light.name, final_degree, final_alpha)
+        print '%.2f - "%s">> Best training error: %.6f' % (time.time(), light.name, final_train_error)
+        print '%.2f - "%s">> Best test error: %.6f' % (time.time(), light.name, final_test_error)
+        print '%.2f - "%s">> Residual sum of squares: %.2f' % (time.time(), light.name, rss)
+
+        # Now that we've run our model, let's determine if we should alter the state
+        # of the lights
+        right_now = datetime.now()
+
+        # 70% is passing by my standards, try and alter the state of this light
+        if rss < 0.3:
+            # Make sure we have enough observations
+            if phase_1_condition:
+                prediction_minutes = (right_now.hour * 60) + right_now.minute
+                prediction = final_est.predict(prediction_minutes)
+                # Features: state, hue, bri, sat, x, y
+                confidence = final_est.score(X_test, Y_test) # 1 is perfect prediction
+                predicted_state = {
+                    'id': light.light_id,
+                    'on': True if int(round(prediction[0][0])) == 1 else False,
+                    'hue': int(prediction[0][1]),
+                    'bri': int(prediction[0][2]),
+                    'sat': int(prediction[0][3]),
+                    'xy': [ round(prediction[0][4], 4), round(prediction[0][5], 4) ]
+                }
+                state_message = json.dumps(predicted_state)
+                print '%.2f - "%s">> Modifying state of light ...' % (time.time(), light.name)
+                print '%.2f - "%s">> The time is %s' % (time.time(), light.name, right_now)
+                print '%.2f - "%s">> Predicting for current minute %s/%s' % (time.time(), light.name, prediction_minutes, minutes_in_day - 1)
+                print '%.2f - "%s">> Predicting state: %s (Confidence: %.2f)' % (time.time(), light.name, 'ON' if predicted_state['on'] else 'OFF', confidence)
+                print '%.2f - "%s">> Predicting hue: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['hue'], confidence)
+                print '%.2f - "%s">> Predicting bri: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['bri'], confidence)
+                print '%.2f - "%s">> Predicting sat: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['sat'], confidence)
+                print '%.2f - "%s">> Predicting xy: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['xy'], confidence)
+                # Update the state of our light
+                rmq_channel.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE, body=state_message)
+            elif phase_2_condition:
+                print '@todo'
+            else:
+                print '%.2f - "%s">> Not enough data, nothing to do (%d observations)' % (time.time(), light.name, total_rows)
+
+        # RSS too high
         else:
-            print '%.2f - "%s">> Not enough data, nothing to do (%d observations)' % (time.time(), light.name, total_rows)
+            print '%.2f - "%s">> RSS too high, nothing to do' % (time.time(), light.name)
 
-    # RSS too high
+        print '%.2f - "%s">> Done processing light' % (time.time(), light.name)
     else:
-        print '%.2f - "%s">> RSS too high, nothing to do' % (time.time(), light.name)
-
-    print '%.2f - "%s">> Done processing light' % (time.time(), light.name)
-
+        print '%.2f - "%s">> Skipping light, not enough data to significantly train/test' % (time.time(), light.name)
 # @todo - Save the weights of the algorithm to feed in later, this is going to
 # get *super* expensive to run every single minute for anything over 5+ lights
 #
