@@ -29,8 +29,8 @@ RUN pip install python-daemon
 
 RUN pip install pika
 
-# Setup the applicatio
-RUN mkdir -p /usr/src/appn
+# Setup the application
+RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
 COPY index.py /usr/src/app

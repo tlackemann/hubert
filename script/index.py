@@ -97,6 +97,9 @@ for light in lights:
             event_time = cassandra.util.datetime_from_uuid1(event.ts)
             # Monday is 0 and Sunday is 6
             day_of_week = event_time.weekday()
+            current_day = event_time.day
+            current_month = event_time.month
+            current_year = event_time.year
             current_hour = event_time.hour
             current_minute = event_time.minute
             # Light is ON if it's both reachable and declared on
@@ -120,11 +123,14 @@ for light in lights:
                     X.append([(current_hour * 60) + current_minute])
 
             # Phase III: Train by minutes in month (2 months+)
-            # X = Total amount of minutes passed during recorded month (0-x)
+            # X = Total amount of minutes passed during recorded month (0-n)
             else:
-                # @todo
-                print '@todo'
-
+                eq = (current_hour * 60) + current_minute
+                if day_of_week > 0:
+                    eq = eq * day_of_week
+                if current_day > 0:
+                    eq = eq * current_day
+            X.append([eq])
             # Features: state, hue, bri, sat, x, y
             Y.append([event_state, event.hue, event.bri, event.sat, event.x, event.y])
 
