@@ -8,7 +8,7 @@ learn_id=`docker ps -a -f name=hubert_learn_1 --format "{{.ID}}"`
 
 # Warn the user that this is going to re-install
 
-if [ -n $cassandra_id ] || [ -n $rabbitmq_id ] || [ -n $hubert_id ]; then
+if [ -n "$cassandra_id" ] || [ -n "$rabbitmq_id" ] || [ -n "$hubert_id" ]; then
   echo "WARNING: This will re-install Hubert. All previous data will be lost."
   echo "Continue? [y/N]:"
   read warning
@@ -21,7 +21,7 @@ fi
 echo "Continuing ..."
 
 # Remove cassandra if it exists
-if [ -n $cassandra_id ]; then
+if [ -n "$cassandra_id" ]; then
   # Check if the container is running
   if [ -n `docker ps -f name=hubert_cassandra_1 --format "{{.ID}}"` ]; then
     echo "Stopping Cassandra ..."
@@ -32,7 +32,7 @@ if [ -n $cassandra_id ]; then
 fi
 
 # Remove rabbitmq if it exists
-if [ -n $rabbitmq_id ]; then
+if [ -n "$rabbitmq_id" ]; then
   if [ -n `docker ps -f name=hubert_rabbitmq_1 --format "{{.ID}}"` ]; then
     echo "Stopping RabbitMQ ..."
     docker stop $rabbitmq_id
@@ -42,7 +42,7 @@ if [ -n $rabbitmq_id ]; then
 fi
 
 # Remove application if it exists
-if [ -n $hubert_id ]; then
+if [ -n "$hubert_id" ]; then
   if [ -n `docker ps -f name=hubert_hubert_1 --format "{{.ID}}"` ]; then
     echo "Stopping Hubert ..."
     docker stop $hubert_id
@@ -52,7 +52,7 @@ if [ -n $hubert_id ]; then
 fi
 
 # Remove learn if it exists
-if [ -n $learn_id ]; then
+if [ -n "$learn_id" ]; then
   # Check if the container is running
   if [ -n `docker ps -f name=hubert_learn_1 --format "{{.ID}}"` ]; then
     echo "Stopping Learning ..."
@@ -91,6 +91,9 @@ seed_cassandra ()
     return
   else
     echo "Successfully seeded Cassandra";
+    # Temp - Add the backup and nodetool repair
+    docker cp cassandra/data/light_events-fd8ffc40d06e11e59732091830ac5256/snapshots/1455566916737/ hubert_cassandra_1:/var/lib/cassandra/data/hubert/light_events/
+    docker exec -it hubert_cassandra_1 sh -c 'service cassandra restart && nodetool repair'
   fi
 }
 echo "Seeding Cassandra ..."

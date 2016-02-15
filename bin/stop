@@ -4,22 +4,22 @@ rabbitmq_id=`docker ps -f name=hubert_rabbitmq_1 --format "{{.ID}}"`
 hubert_id=`docker ps -f name=hubert_hubert_1 --format "{{.ID}}"`
 learn_id=`docker ps -f name=hubert_learn_1 --format "{{.ID}}"`
 
-if [ -n $hubert_id ]; then
+if [ -n "$hubert_id" ]; then
   echo "Stopping Hubert container ..."
   docker stop $hubert_id
 fi
 
-if [ -n $cassandra_id ]; then
+if [ -n "$cassandra_id" ]; then
   echo "Stopping Cassandra container ..."
   docker stop $cassandra_id
 fi
 
-if [ -n $rabbitmq_id ]; then
+if [ -n "$rabbitmq_id" ]; then
   echo "Stopping RabbitMQ container ..."
   docker stop $rabbitmq_id
 fi
 
-if [ -n $learn_id ]; then
+if [ -n "$learn_id" ]; then
   echo "Stopping Learning container ..."
   docker stop $learn_id
 fi
