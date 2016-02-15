@@ -109,12 +109,17 @@ docker run --name hubert_rabbitmq_1 -itd \
   rabbitmq:3.6
 
 # Initialize hubert and run the install script
+docker run --name hubert_hubert_1 -itd \
+  --link hubert_cassandra_1:cassandra \
+  --link hubert_rabbitmq_1:hubert \
+  --env NODE_ENV=production \
+  hubert_hubert:latest npm start
+
 echo ""
 echo "Starting Hubert installation script ..."
 echo "======================================="
 echo ""
-docker run --name hubert_hubert_1 -it --rm \
-  hubert_hubert:latest node dist/install.js
+docker exec -it hubert_hubert_1 sh -c 'node dist/install.js'
 
 echo ""
 echo "Cleaning up ..."

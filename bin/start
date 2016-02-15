@@ -1,5 +1,4 @@
 #!/bin/bash
-hubert_id=`docker ps -a -f name=hubert_hubert_1 --format "{{.ID}}"`
 echo "Starting Cassandra container ..."
 docker start hubert_cassandra_1
 
@@ -21,15 +20,7 @@ wait_cassandra ()
   else
     echo "Cassandra ready ...";
     echo "Starting Hubert container ..."
-    if [ -n "$hubert_id" ]; then
-      docker start hubert_hubert_1
-    else
-      docker run --name hubert_hubert_1 -it \
-        --link hubert_cassandra_1:cassandra \
-        --link hubert_rabbitmq_1:hubert \
-        --env NODE_ENV=production \
-        hubert_hubert:latest npm start
-    fi
+    docker start hubert_hubert_1
   fi
 }
 wait_cassandra
