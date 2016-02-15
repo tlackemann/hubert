@@ -3,4 +3,5 @@
 node_modules/
 dist/
 public/js/bundle.*
-config/local.json
+config/production.json
+cassandra/data/*
