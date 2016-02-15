@@ -34,7 +34,7 @@
     "cassandra-driver": "^3.0.0",
     "config": "^1.19.0",
     "hapi": "^13.0.0",
-    "joi": "^7.2.3",
+    "joi": "^8.0.1",
     "lodash": "^4.2.1",
     "node-hue-api": "^2.0.1",
     "react": "^0.14.7",

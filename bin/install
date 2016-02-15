@@ -91,9 +91,9 @@ seed_cassandra ()
     return
   else
     echo "Successfully seeded Cassandra";
-    # Temp - Add the backup and nodetool repair
-    docker cp cassandra/data/light_events-fd8ffc40d06e11e59732091830ac5256/snapshots/1455566916737/ hubert_cassandra_1:/var/lib/cassandra/data/hubert/light_events/
-    docker exec -it hubert_cassandra_1 sh -c 'service cassandra restart && nodetool repair'
+    # @todo - Eventually backups would be cool, this formula below works to restore a snapshot
+    # docker cp cassandra/data/light_events-fd8ffc40d06e11e59732091830ac5256/snapshots/1455566916737/ hubert_cassandra_1:/var/lib/cassandra/data/hubert/light_events/
+    # docker exec -it hubert_cassandra_1 sh -c 'service cassandra restart && nodetool repair'
   fi
 }
 echo "Seeding Cassandra ..."
