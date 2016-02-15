@@ -88,5 +88,5 @@ export default {
   getConnection,
   getDefaultBridge,
   registerUser,
-  connect
+  connect,
 }

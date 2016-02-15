@@ -11,13 +11,15 @@ const log = new Log('hubert-install')
 // Setup terminal input
 const rl = readline.createInterface({
   input: process.stdin,
-  output: process.stdout
+  output: process.stdout,
 });
 
 // Set the username
 const username = process.env.HUE_USER || config.hue.username || 'hubert';
 
-rl.question('Please press the "link" button on your Hue Bridge and then press any key to continue', (answer) => {
+rl.question(
+  `Please press the "link" button on your Hue Bridge and then \
+  press [enter] to continue`, () => {
   hue.getDefaultBridge()
     .then((bridge) => {
       const user = hue.registerUser(
@@ -30,14 +32,14 @@ rl.question('Please press the "link" button on your Hue Bridge and then press an
       log.info('User created: %s (%s)', username, user)
 
       // Create a new "production" configuration
-      const newConfig = assign({}, config, { hue: { username: username, hash: user } })
+      const newConfig = assign({}, config, { hue: { username, hash: user } })
       fs.writeFileSync('config/production.json', JSON.stringify(newConfig))
       rl.close()
       log.info('Successfully saved configuration')
       process.exit(0)
     })
     .catch((err) => {
-      log.error("There was a problem creating the user: %s", err)
+      log.error('There was a problem creating the user: %s', err)
       rl.close()
       process.exit(1)
     })

@@ -48,17 +48,24 @@ exports.register = (server, options, next) => {
                 const messageState = pick(messageStatus, requiredStates)
                 // Compare against message state
                 const equal = isEqual(state, messageState)
-                let newState = {}
+                const newState = {}
                 if (!equal) {
                   log.info({ light_id: lightId }, 'States for light %s are not equal', lightId)
                   // Let's identify what is different
-                  let twilioLogs = []
+                  const twilioLogs = []
                   each(requiredStates, (s) => {
                     const currentValue = state[s]
                     const newValue = messageState[s]
-                    if ((s !== 'xy' && newValue !== currentValue) || (s === 'xy' && !isEqual(newValue, currentValue))) {
+                    if (
+                      (s !== 'xy' && newValue !== currentValue) ||
+                      (s === 'xy' && !isEqual(newValue, currentValue))
+                    ) {
                       newState[s] = newValue
-                      log.info({ light_id: lightId }, '"%s": was %s, now %s', s, currentValue, newValue)
+                      log.info(
+                        { light_id: lightId },
+                        '"%s": was %s, now %s',
+                        s, currentValue, newValue
+                      )
                       if (Boolean(config.twilio.enabled)) {
                         twilioLogs.push(`${s}: was ${currentValue}, now ${newValue}`)
                       }
@@ -68,42 +75,67 @@ exports.register = (server, options, next) => {
                   if (newState.on || state.on) {
                     // Now update the light
                     api.setLightState(lightId, newState)
-                      .then((result) => {
-                        console.log(result)
+                      .then(() => {
                         log.info({ light_id: lightId }, 'Successfully updated light')
 
                         // Sending a message to the configured phone number
                         // Initialize to Twilio
                         if (Boolean(config.twilio.enabled)) {
                           log.info({ light_id: lightId }, 'Twilio is enabled')
-                          const twilioClient = new twilio.RestClient(config.twilio.sid, config.twilio.token);
+                          const twilioClient = new twilio.RestClient(
+                            config.twilio.sid,
+                            config.twilio.token
+                          );
                           twilioClient.sms.messages.create({
                             to: config.twilio.to,
                             from: config.twilio.number,
-                            body: `Updated state of Light ${lightId}\n---\n${twilioLogs.join('\n')}`
-                          }, (error, message) => {
+                            body: `Updated state of Light ${lightId}` +
+                              `\n---\n${twilioLogs.join('\n')}`,
+                          }, (error) => {
                             if (error) {
-                              log.error({ light_id: lightId }, 'There was a problem sending message with Twilio: %s', error)
+                              log.error(
+                                { light_id: lightId },
+                                'There was a problem sending SMS: %s',
+                                error
+                              )
                             } else {
-                              log.info({ light_id: lightId }, 'Successfully updated numbers %s via Twilio', config.twilio.to)
+                              log.info(
+                                { light_id: lightId },
+                                'Successfully sent SMS to %s',
+                                config.twilio.to
+                              )
                             }
                           })
                         }
                       })
                       .catch((err) => {
-                        log.error({ light_id: lightId }, 'Problem saving current light state: %s', err)
+                        log.error(
+                          { light_id: lightId },
+                          'Problem saving current light state: %s',
+                          err
+                        )
                       })
                   } else {
-                    log.info({ light_id: lightId }, 'Skipping update because light is off')
+                    log.info(
+                      { light_id: lightId },
+                      'Skipping update because light is off'
+                    )
                   }
                 } else {
-                  log.info({ light_id: lightId }, 'States for light %s are equal, nothing to do', lightId)
+                  log.info(
+                    { light_id: lightId },
+                    'States for light %s are equal, nothing to do',
+                    lightId
+                  )
                 }
               })
               .catch((err) => {
-                log.error({ light_id: lightId }, 'Problem fetching current light state: %s', err)
+                log.error(
+                  { light_id: lightId },
+                  'Problem fetching current light state: %s',
+                  err
+                )
               })
-
           })
         })
         next()
