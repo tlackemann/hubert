@@ -1,2 +1,20 @@
 #!/bin/bash
-nodemon -L index.js
+
+echo "Starting Cassandra container ..."
+docker run --name huebert_cassandra_1 --expose 9042 -itd huebert_cassandra:latest
+
+# Initialize RabbitMQ
+echo "Starting RabbitMQ container ..."
+docker run --name huebert_rabbitmq_1 -itd \
+  --hostname huebert.rabbitmq \
+  --env RABBITMQ_NODENAME=hubert@hubert.rabbitmq \
+  --env RABBITMQ_ERLANG_COOKIE=hubert-cookie \
+  --env RABBITMQ_DEFAULT_USER=hubert \
+  --env RABBITMQ_DEFAULT_PASS=hubert \
+  rabbitmq:3.6
+
+echo "Starting Hubert container ..."
+docker run --name huebert_huebert_1 -itd \
+  --link huebert_cassandra_1:cassandra \
+  --link huebert_rabbitmq_1:hubert.rabbitmq \
+  huebert_huebert:latest

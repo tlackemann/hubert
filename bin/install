@@ -21,48 +21,82 @@ echo "Continuing ..."
 
 # Remove cassandra if it exists
 if [ -n $cassandra_id ]; then
+  # Check if the container is running
+  if [ -n `docker ps -f name=huebert_cassandra_1 --format "{{.ID}}"` ]; then
+    echo "Stopping Cassandra ..."
+    docker stop $cassandra_id
+  fi
   echo "Removing Cassandra ..."
   docker rm -f $cassandra_id
 fi
 
 # Remove rabbitmq if it exists
 if [ -n $rabbitmq_id ]; then
+  if [ -n `docker ps -f name=huebert_rabbitmq_1 --format "{{.ID}}"` ]; then
+    echo "Stopping RabbitMQ ..."
+    docker stop $rabbitmq_id
+  fi
   echo "Removing RabbitMQ ..."
   docker rm -f $rabbitmq_id
 fi
 
 # Remove application if it exists
 if [ -n $huebert_id ]; then
+  if [ -n `docker ps -f name=huebert_huebert_1 --format "{{.ID}}"` ]; then
+    echo "Stopping Hubert ..."
+    docker stop $huebert_id
+  fi
   echo "Removing Hubert ..."
   docker rm -f $huebert_id
 fi
 
 # Build hubert container
+echo "Building Hubert container ..."
 docker build -t huebert_huebert:latest ./
 
 # Build cassandra container
+echo "Building Cassandra container ..."
 docker build -t huebert_cassandra:latest ./cassandra
 
 # Build machine-learning container
+echo "Building Machine-Learning container ..."
 docker build -t huebert_learn:latest ./script
 
 # Initialize the cassandra db
-docker run --name huebert_cassandra_1 -itd huebert_cassandra:latest
+echo "Starting Cassandra container ..."
+docker run --name huebert_cassandra_1 --expose 9042 -itd huebert_cassandra:latest
 
-# Seed Cassandra with the necessary tables
-docker run -it --link huebert_cassandra_1:huebert_cassandra --rm huebert_cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR" -f /docker/hubert.cql'
-
-# Initialize RabbitMQ
-docker run --name huebert_rabbitmq_1 -itd \
-  --hostname huebert.rabbitmq \
-  --env RABBITMQ_NODENAME=huebert@huebert.rabbitmq \
-  --env RABBITMQ_ERLANG_COOKIE=hubert-cookie \
-  --env RABBITMQ_DEFAULT_USER=hubert \
-  --env RABBITMQ_DEFAULT_PASS=hubert \
-  rabbitmq:3.6
+seed_cassandra ()
+{
+  wait_seconds=5
+  # Seed Cassandra with the necessary tables
+  seed_tables=`docker run -it --link huebert_cassandra_1:cassandra --rm huebert_cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR" -f /docker/hubert.cql'`
+  echo $seed_tables
+  if echo "$seed_tables" | grep -q "error"; then
+    echo "Container not ready, waiting $wait_seconds seconds ...";
+    sleep $wait_seconds;
+    seed_cassandra
+    return
+  else
+    echo "Successfully seeded Cassandra";
+  fi
+}
+echo "Seeding Cassandra ..."
+seed_cassandra
 
 # Initialize hubert and run the install script
+echo ""
+echo "Starting Hubert installation script ..."
+echo "======================================="
+echo ""
 docker run --name huebert_huebert_1 -it --rm \
-  --link huebert_cassandra_1:huebert_cassandra \
-  --link huebert_rabbitmq_1:huebert.rabbitmq \
   huebert_huebert:latest node dist/install.js
+
+echo ""
+echo "Cleaning up ..."
+if [ -n `docker ps -f name=huebert_cassandra_1 --format "{{.ID}}"` ]; then
+  echo "Stopping Cassandra container ...."
+  docker stop `docker ps -f name=huebert_cassandra_1 --format "{{.ID}}"`
+fi
+
+echo "Done installing Hubert. Enjoy!"
