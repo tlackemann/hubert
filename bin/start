@@ -1,0 +1,30 @@
+#!/bin/bash
+echo "Starting Cassandra container ..."
+docker start hubert_cassandra_1
+
+echo "Starting RabbitMQ container ..."
+docker start hubert_rabbitmq_1
+
+echo "Waiting for Cassandra container to become available ..."
+wait_cassandra ()
+{
+  wait_seconds=5
+  # Seed Cassandra with the necessary tables
+  check_online=`docker run -it --link hubert_cassandra_1:cassandra --rm hubert_cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR" -e "use hubert;"'`
+  echo $check_online
+  if echo "$check_online" | grep -q "error"; then
+    echo "Container not ready, waiting $wait_seconds seconds ...";
+    sleep $wait_seconds;
+    wait_cassandra
+    return
+  else
+    echo "Cassandra ready ...";
+    echo "Starting Hubert container ..."
+    docker start hubert_hubert_1
+  fi
+}
+wait_cassandra
+
+echo "Starting Learning container ..."
+# @todo - This needs to be run via cronjob or something similar
+# docker run -it --name hubert_learn_1 --link hubert_cassandra_1:cassandra --link hubert_rabbitmq_1:hubert.rabbitmq hubert_learn:latest

@@ -1,2 +1,0 @@
-#!/bin/bash
-babel src/ --watch -d dist 

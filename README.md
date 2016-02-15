@@ -12,93 +12,31 @@ A Nest-inspired application for the [Phillips Hue](http://meethue.com).
 
 For more information, see [How It Works](#how-it-works).
 
-## Setup
+## Installation
 
-Installation is relatively straight-forward however somewhat cumbersome. I'm
-working on implementing a better system.
-
-### Dependencies
-
-* [Node.js](http://nodejs.org)
-* [Docker](https://docker.com/)
-
-### Installation
-
-Use git to checkout the repository:
+To install Hubert, simply run:
 
 ```
-git checkout https://github.com/tlackemann/hubert.git hubert
+./bin/install
 ```
 
-Then install the application by running:
+The application will download and build all necessary Docker containers. You
+will be prompted to press the 'Link' button on your Hue Bridge to complete the
+installation.
+
+## Usage
+
+To start Hubert, run:
 
 ```
-cd hubert && npm install && npm run build
+./bin/start
 ```
 
-This will install all required modules and compile the source code.
-
-### Create Hue Bridge User
-
-In order to use this application, you'll first need to register it with your Hue
-Bridge. This can easily be done by following the below steps:
-
-1. Press the 'link' button on your Hue Bridge
-2. Run `HUE_USER=my-cool-username npm run hue`
-3. Update `./config/default.json` with your new username
-
-A new user will automatically be created for you. Update the configuration
-file with the hash it generates, it will look something like this:
+To stop Hubert, run:
 
 ```
-033a6feb77750dc770ec4a4487a9e8db
+./bin/stop
 ```
-
-Don't forget to update the configuration file, otherwise the application
-will not be able to communicate properly.
-
-### Seed Cassandra Database
-
-In addition to creating a bridge user, you'll also need to seed a Cassandra
-instance with the `hubert` schemas.
-
-To seed the Cassandra instance, start the Cassandra container by running:
-
-```
-docker-compose up cassandra
-```
-
-Then run the following to seed the necessary schemas:
-
-```
-docker run -it --link hubert_cassandra_1:cassandra --rm hubert_cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR" -f /docker/hubert.cql'
-```
-
-### Create Machine Learning Cron
-
-Finally, build the machine learning container so that we can execute it as a
-cron.
-
-```
-docker build -t hubert_learn:latest script/
-```
-
-Now add the following to your `crontab` (make sure to update `/path/to/hubert`
-with the correct folder):
-
-```
-* * * * * /path/to/hubert/bin/learn
-```
-
-## Running
-
-Start the application by running:
-
-```
-docker-compose up
-```
-
-This will start all containers necessary to run Hubert.
 
 ## How It Works
 
@@ -155,16 +93,98 @@ We recommend running the machine learning algorithm every minute.
 
 ## Development
 
-The Docker container for the node.js applications use [nodemon]() to reboot the
-instance whenever a file is changed. Since it's faster to run ES5 code
-(currently) we need to compile ES6 down to ES5.
+Development for Hubert is relatively straight-forward.
+
+### Dependencies
+
+* [Node.js](http://nodejs.org)
+* [Docker](https://docker.com/)
+
+### Installation
+
+Use git to checkout the repository:
 
 ```
-npm run dev
+git checkout https://github.com/tlackemann/hubert.git hubert
 ```
 
-This will setup a listener on the `src/` folder to compile into the `dist/`
-folder.
+Then install the application by running:
+
+```
+cd hubert && npm install && npm run build
+```
+
+This will install all required modules and compile the source code.
+
+### Create Hue Bridge User
+
+In order to use this application, you'll first need to register it with your Hue
+Bridge. This can easily be done by following the below steps:
+
+1. Press the 'link' button on your Hue Bridge
+2. Run `HUE_USER=my-cool-username node dist/install.js`
+3. Update `./config/default.json` with your new username
+
+A new user will automatically be created for you. Update the configuration
+file with the hash it generates, it will look something like this:
+
+```
+033a6feb77750dc770ec4a4487a9e8db
+```
+
+Don't forget to update the configuration file, otherwise the application
+will not be able to communicate properly.
+
+### Seed Cassandra Database
+
+In addition to creating a bridge user, you'll also need to seed a Cassandra
+instance with the `hubert` schemas.
+
+To seed the Cassandra instance, start the Cassandra container by running:
+
+```
+docker-compose up cassandra
+```
+
+Then run the following to seed the necessary schemas:
+
+```
+docker run -it --link hubert_cassandra_1:cassandra --rm hubert_cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR" -f /docker/hubert.cql'
+```
+
+### Create Machine Learning Cron
+
+Finally, build the machine learning container so that we can execute it as a
+cron.
+
+```
+docker build -t hubert_learn:latest script/
+```
+
+Now add the following to your `crontab` (make sure to update `/path/to/hubert`
+with the correct folder):
+
+```
+* * * * * /path/to/hubert/bin/learn
+```
+
+### Running
+
+Start the application by running:
+
+```
+docker-compose up
+```
+
+This will start all containers necessary to run Hubert.
+
+The development Docker container for the Node.js application uses
+[nodemon](https://github.com/remy/nodemon) and [Babel](https://babeljs.io/) to
+compile and reboot the instance whenever a file is changed. Since it's faster to
+run ES5 code (currently) with Node, we compile ES6 down to ES5 automatically
+when a file change is detected. The development version maps the root directory
+to the application directory in the Docker instance. Any changes made locally
+will instantly be available on the Docker container.
 
 ### Configuration
 

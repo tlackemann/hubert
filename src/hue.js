@@ -55,7 +55,7 @@ function connect() {
     getDefaultBridge()
       .then((bridge) => {
         const ip = bridge.ipaddress
-        const username = config.hue.username
+        const username = config.hue.hash
 
         log.info('Attempting to establish a connection ...')
         log.info('Connecting on %s with username "%s"', ip, username)
@@ -75,9 +75,6 @@ function connect() {
         // Let's get the lightbulbs now
         log.info('Successfully connected to the bridge "%s"', state.name)
 
-        // Start the interval
-        // intervalGetLightState = setInterval(getLightState, config.app.checkInterval)
-
         // Done, that's it
         res(api)
       })
@@ -91,5 +88,5 @@ export default {
   getConnection,
   getDefaultBridge,
   registerUser,
-  connect
+  connect,
 }

@@ -6,7 +6,8 @@
     "minimumDataThreshold": "50000"
   },
   "hue": {
-    "username": "59acd3ee04378737288552274697ab"
+    "username": "hubert",
+    "hash": ""
   },
   "rabbitmq": {
     "host": "hubert",

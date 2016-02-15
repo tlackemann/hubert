@@ -1,2 +1,0 @@
-#!/bin/bash
-nodemon -L index.js

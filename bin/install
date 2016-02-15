@@ -1,2 +1,135 @@
 #!/bin/bash
-node dist/install.js
+
+# Determine if we already built some of these containers
+cassandra_id=`docker ps -a -f name=hubert_cassandra_1 --format "{{.ID}}"`
+rabbitmq_id=`docker ps -a -f name=hubert_rabbitmq_1 --format "{{.ID}}"`
+hubert_id=`docker ps -a -f name=hubert_hubert_1 --format "{{.ID}}"`
+learn_id=`docker ps -a -f name=hubert_learn_1 --format "{{.ID}}"`
+
+# Warn the user that this is going to re-install
+
+if [ -n "$cassandra_id" ] || [ -n "$rabbitmq_id" ] || [ -n "$hubert_id" ]; then
+  echo "WARNING: This will re-install Hubert. All previous data will be lost."
+  echo "Continue? [y/N]:"
+  read warning
+  if [ -z $warning ] || [ "$warning" != "y" ]; then
+    echo "Exiting ..."
+    exit 0
+  fi
+fi
+
+echo "Continuing ..."
+
+# Remove cassandra if it exists
+if [ -n "$cassandra_id" ]; then
+  # Check if the container is running
+  if [ -n `docker ps -f name=hubert_cassandra_1 --format "{{.ID}}"` ]; then
+    echo "Stopping Cassandra ..."
+    docker stop $cassandra_id
+  fi
+  echo "Removing Cassandra ..."
+  docker rm -f $cassandra_id
+fi
+
+# Remove rabbitmq if it exists
+if [ -n "$rabbitmq_id" ]; then
+  if [ -n `docker ps -f name=hubert_rabbitmq_1 --format "{{.ID}}"` ]; then
+    echo "Stopping RabbitMQ ..."
+    docker stop $rabbitmq_id
+  fi
+  echo "Removing RabbitMQ ..."
+  docker rm -f $rabbitmq_id
+fi
+
+# Remove application if it exists
+if [ -n "$hubert_id" ]; then
+  if [ -n `docker ps -f name=hubert_hubert_1 --format "{{.ID}}"` ]; then
+    echo "Stopping Hubert ..."
+    docker stop $hubert_id
+  fi
+  echo "Removing Hubert ..."
+  docker rm -f $hubert_id
+fi
+
+# Remove learn if it exists
+if [ -n "$learn_id" ]; then
+  # Check if the container is running
+  if [ -n `docker ps -f name=hubert_learn_1 --format "{{.ID}}"` ]; then
+    echo "Stopping Learning ..."
+    docker stop $learn_id
+  fi
+  echo "Removing Learning ..."
+  docker rm -f $learn_id
+fi
+
+# Build hubert container
+echo "Building Hubert container ..."
+docker build -t hubert_hubert:latest ./
+
+# Build cassandra container
+echo "Building Cassandra container ..."
+docker build -t hubert_cassandra:latest ./cassandra
+
+# Build machine-learning container
+echo "Building Machine-Learning container ..."
+docker build -t hubert_learn:latest ./script
+
+# Initialize the cassandra db
+echo "Starting Cassandra container ..."
+docker run --name hubert_cassandra_1 --expose 9042 -itd hubert_cassandra:latest
+
+seed_cassandra ()
+{
+  wait_seconds=5
+  # Seed Cassandra with the necessary tables
+  seed_tables=`docker run -it --link hubert_cassandra_1:cassandra --rm hubert_cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR" -f /docker/hubert.cql'`
+  echo $seed_tables
+  if echo "$seed_tables" | grep -q "error"; then
+    echo "Container not ready, waiting $wait_seconds seconds ...";
+    sleep $wait_seconds;
+    seed_cassandra
+    return
+  else
+    echo "Successfully seeded Cassandra";
+    # @todo - Eventually backups would be cool, this formula below works to restore a snapshot
+    # docker cp cassandra/data/light_events-fd8ffc40d06e11e59732091830ac5256/snapshots/1455566916737/ hubert_cassandra_1:/var/lib/cassandra/data/hubert/light_events/
+    # docker exec -it hubert_cassandra_1 sh -c 'service cassandra restart && nodetool repair'
+  fi
+}
+echo "Seeding Cassandra ..."
+seed_cassandra
+
+echo "Initializing RabbitMQ container ..."
+docker run --name hubert_rabbitmq_1 -itd \
+  --hostname hubert.rabbitmq \
+  --env RABBITMQ_NODENAME=hubert@hubert.rabbitmq \
+  --env RABBITMQ_ERLANG_COOKIE=hubert-cookie \
+  --env RABBITMQ_DEFAULT_USER=hubert \
+  --env RABBITMQ_DEFAULT_PASS=hubert \
+  rabbitmq:3.6
+
+# Initialize hubert and run the install script
+docker run --name hubert_hubert_1 -itd \
+  --link hubert_cassandra_1:cassandra \
+  --link hubert_rabbitmq_1:hubert \
+  --env NODE_ENV=production \
+  hubert_hubert:latest npm start
+
+echo ""
+echo "Starting Hubert installation script ..."
+echo "======================================="
+echo ""
+docker exec -it hubert_hubert_1 sh -c 'node dist/install.js'
+
+echo ""
+echo "Cleaning up ..."
+if [ -n `docker ps -f name=hubert_cassandra_1 --format "{{.ID}}"` ]; then
+  echo "Stopping Cassandra container ...."
+  docker stop `docker ps -f name=hubert_cassandra_1 --format "{{.ID}}"`
+fi
+if [ -n `docker ps -f name=hubert_rabbitmq_1 --format "{{.ID}}"` ]; then
+  echo "Stopping RabbitMQ container ...."
+  docker stop `docker ps -f name=hubert_rabbitmq_1 --format "{{.ID}}"`
+fi
+
+echo "Done installing Hubert. Enjoy!"
