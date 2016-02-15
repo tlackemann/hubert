@@ -84,6 +84,15 @@ seed_cassandra ()
 echo "Seeding Cassandra ..."
 seed_cassandra
 
+echo "Initializing RabbitMQ container ..."
+docker run --name huebert_rabbitmq_1 -itd \
+  --hostname huebert.rabbitmq \
+  --env RABBITMQ_NODENAME=hubert@hubert.rabbitmq \
+  --env RABBITMQ_ERLANG_COOKIE=hubert-cookie \
+  --env RABBITMQ_DEFAULT_USER=hubert \
+  --env RABBITMQ_DEFAULT_PASS=hubert \
+  rabbitmq:3.6
+
 # Initialize hubert and run the install script
 echo ""
 echo "Starting Hubert installation script ..."
@@ -97,6 +106,10 @@ echo "Cleaning up ..."
 if [ -n `docker ps -f name=huebert_cassandra_1 --format "{{.ID}}"` ]; then
   echo "Stopping Cassandra container ...."
   docker stop `docker ps -f name=huebert_cassandra_1 --format "{{.ID}}"`
+fi
+if [ -n `docker ps -f name=huebert_rabbitmq_1 --format "{{.ID}}"` ]; then
+  echo "Stopping RabbitMQ container ...."
+  docker stop `docker ps -f name=huebert_rabbitmq_1 --format "{{.ID}}"`
 fi
 
 echo "Done installing Hubert. Enjoy!"

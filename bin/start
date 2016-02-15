@@ -1,13 +1,16 @@
 #!/bin/bash
+huebert_id=`docker ps -f name=huebert_huebert_1 --format "{{.ID}}"`
 
-# Build hubert container
-docker build -t hubert_hubert:latest ./
+echo "Starting Cassandra container ..."
+docker start huebert_cassandra_1
 
-# Build cassandra container
-docker build -t hubert_cassandra:latest ./cassandra
+echo "Starting RabbitMQ container ..."
+docker start huebert_rabbitmq_1
 
-# Build machine-learning container
-docker build -t hubert_learn:latest ./script
-
-# Run cassandra container
-docker run -it --link hubert_cassandra_1:cassandra --link hubert_rabbitmq_1:hubert.rabbitmq hubert_learn:latest
+echo "Starting Hubert container ..."
+if [ -n $huebert_id ]; then
+  docker start huebert_huebert_1
+else
+  docker run --name huebert_huebert_1 -itd \
+    huebert_huebert:latest npm start
+fi
