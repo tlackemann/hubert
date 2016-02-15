@@ -1,2 +1,2 @@
 #!/bin/bash
-babel src/ --watch -d dist 
+babel src/ --watch -d dist

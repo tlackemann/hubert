@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Build hubert container
+docker build -t hubert_hubert:latest ./
+
+# Build cassandra container
+docker build -t hubert_cassandra:latest ./cassandra
+
+# Build machine-learning container
+docker build -t hubert_learn:latest ./script
+
+# Run cassandra container
+docker run -it --link hubert_cassandra_1:cassandra --link hubert_rabbitmq_1:hubert.rabbitmq hubert_learn:latest

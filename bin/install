@@ -1,2 +1,68 @@
 #!/bin/bash
-node dist/install.js
+
+# Determine if we already built some of these containers
+cassandra_id=`docker ps -a -f name=huebert_cassandra_1 --format "{{.ID}}"`
+rabbitmq_id=`docker ps -a -f name=huebert_rabbitmq_1 --format "{{.ID}}"`
+huebert_id=`docker ps -a -f name=huebert_huebert_1 --format "{{.ID}}"`
+
+# Warn the user that this is going to re-install
+
+if [ -n $cassandra_id ] || [ -n $rabbitmq_id ] || [ -n $huebert_id ]; then
+  echo "WARNING: This will re-install Hubert. All previous data will be lost."
+  echo "Continue? [y/N]:"
+  read warning
+  if [ -z $warning ] || [ "$warning" != "y" ]; then
+    echo "Exiting ..."
+    exit 0
+  fi
+fi
+
+echo "Continuing ..."
+
+# Remove cassandra if it exists
+if [ -n $cassandra_id ]; then
+  echo "Removing Cassandra ..."
+  docker rm -f $cassandra_id
+fi
+
+# Remove rabbitmq if it exists
+if [ -n $rabbitmq_id ]; then
+  echo "Removing RabbitMQ ..."
+  docker rm -f $rabbitmq_id
+fi
+
+# Remove application if it exists
+if [ -n $huebert_id ]; then
+  echo "Removing Hubert ..."
+  docker rm -f $huebert_id
+fi
+
+# Build hubert container
+docker build -t huebert_huebert:latest ./
+
+# Build cassandra container
+docker build -t huebert_cassandra:latest ./cassandra
+
+# Build machine-learning container
+docker build -t huebert_learn:latest ./script
+
+# Initialize the cassandra db
+docker run --name huebert_cassandra_1 -itd huebert_cassandra:latest
+
+# Seed Cassandra with the necessary tables
+docker run -it --link huebert_cassandra_1:huebert_cassandra --rm huebert_cassandra sh -c 'exec cqlsh "$CASSANDRA_PORT_9042_TCP_ADDR" -f /docker/hubert.cql'
+
+# Initialize RabbitMQ
+docker run --name huebert_rabbitmq_1 -itd \
+  --hostname huebert.rabbitmq \
+  --env RABBITMQ_NODENAME=huebert@huebert.rabbitmq \
+  --env RABBITMQ_ERLANG_COOKIE=hubert-cookie \
+  --env RABBITMQ_DEFAULT_USER=hubert \
+  --env RABBITMQ_DEFAULT_PASS=hubert \
+  rabbitmq:3.6
+
+# Initialize hubert and run the install script
+docker run --name huebert_huebert_1 -it --rm \
+  --link huebert_cassandra_1:huebert_cassandra \
+  --link huebert_rabbitmq_1:huebert.rabbitmq \
+  huebert_huebert:latest node dist/install.js
