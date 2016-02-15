@@ -26,7 +26,7 @@ installation.
 
 ## Usage
 
-Hubert runs as a Docker daemon. To start Hubert, run:
+To start Hubert, run:
 
 ```
 ./bin/start
@@ -178,17 +178,13 @@ docker-compose up
 
 This will start all containers necessary to run Hubert.
 
-
-The Docker container for the node.js applications use [nodemon]() to reboot the
-instance whenever a file is changed. Since it's faster to run ES5 code
-(currently) we need to compile ES6 down to ES5.
-
-```
-npm run dev
-```
-
-This will setup a listener on the `src/` folder to compile into the `dist/`
-folder.
+The development Docker container for the Node.js application uses
+[nodemon](https://github.com/remy/nodemon) and [Babel](https://babeljs.io/) to
+compile and reboot the instance whenever a file is changed. Since it's faster to
+run ES5 code (currently) with Node, we compile ES6 down to ES5 automatically
+when a file change is detected. The development version maps the root directory
+to the application directory in the Docker instance. Any changes made locally
+will instantly be available on the Docker container.
 
 ### Configuration
 
