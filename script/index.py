@@ -83,8 +83,7 @@ for light in lights:
     phase_2_condition = total_rows >= recordings_per_day * 14 and total_rows < recordings_per_day * 60
 
     # We need at least a week's worth of data before we start predicting
-    # if total_rows >= recordings_per_day * 7:
-    if True:
+    if total_rows >= recordings_per_day * 7:
         print '%.2f - "%s">> Preparing to format data ...' % (time.time(), light.name)
         for event in light_events:
             # Get the datetime of the event
