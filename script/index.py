@@ -175,8 +175,8 @@ for light in lights:
         # of the lights
         right_now = datetime.now()
 
-        # 70% is passing by my standards, try and alter the state of this light
-        if rss < 0.3:
+        # We want to be pretty sure we're going to do something right
+        if rss < 0.1:
             # Make sure we have enough observations
             if phase_1_condition:
                 # Predict based on the current minute
