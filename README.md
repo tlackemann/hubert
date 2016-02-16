@@ -14,11 +14,13 @@ For more information, see [How It Works](#how-it-works).
 
 ## Installation
 
-To install Hubert, simply run:
-
 ```
 ./bin/install
 ```
+
+### Dependencies
+
+* [Docker](https://docker.com/)
 
 The application will download and build all necessary Docker containers. You
 will be prompted to press the 'Link' button on your Hue Bridge to complete the
