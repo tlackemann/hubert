@@ -131,5 +131,9 @@ if [ -n `docker ps -f name=hubert_rabbitmq_1 --format "{{.ID}}"` ]; then
   echo "Stopping RabbitMQ container ...."
   docker stop `docker ps -f name=hubert_rabbitmq_1 --format "{{.ID}}"`
 fi
+if [ -n `docker ps -f name=hubert_hubert_1 --format "{{.ID}}"` ]; then
+  echo "Stopping Hubert container ...."
+  docker stop `docker ps -f name=hubert_hubert_1 --format "{{.ID}}"`
+fi
 
 echo "Done installing Hubert. Enjoy!"
