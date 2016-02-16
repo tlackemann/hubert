@@ -44,5 +44,3 @@ rl.question(
       process.exit(1)
     })
 });
-
-// Create the user

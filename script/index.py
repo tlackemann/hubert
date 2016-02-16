@@ -83,7 +83,8 @@ for light in lights:
     phase_2_condition = total_rows >= recordings_per_day * 14 and total_rows < recordings_per_day * 60
 
     # We need at least a week's worth of data before we start predicting
-    if total_rows >= recordings_per_day * 7:
+    # if total_rows >= recordings_per_day * 7:
+    if True:
         print '%.2f - "%s">> Preparing to format data ...' % (time.time(), light.name)
         for event in light_events:
             # Get the datetime of the event
@@ -106,7 +107,8 @@ for light in lights:
             # X = Total amount of minutes passed on recorded day (0-1439)
             if phase_1_condition:
                 X.append([(current_hour * 60) + current_minute])
-
+                # Features: state
+                Y.append([event_state])
             # Phase II: Train by minutes in week (14 days+)
             # X = Total amount of minutes passed during recorded week (0-10079)
             elif phase_2_condition:
@@ -114,6 +116,8 @@ for light in lights:
                     X.append([((current_hour * 60) + current_minute) * day_of_week])
                 else:
                     X.append([(current_hour * 60) + current_minute])
+                # Features: state, hue, bri, sat
+                Y.append([event_state, event.hue, event.bri, event.sat])
 
             # Phase III: Train by minutes in month (2 months+)
             # X = Total amount of minutes passed during recorded month (0-n)
@@ -124,16 +128,20 @@ for light in lights:
                 if current_day > 0:
                     eq = eq * current_day
                 X.append([eq])
-            # Features: state, hue, bri, sat, x, y
-            Y.append([event_state, event.hue, event.bri, event.sat, event.x, event.y])
+                # Features: state, hue, bri, sat, x, y
+                Y.append([event_state, event.hue, event.bri, event.sat, event.x, event.y])
 
         # Split the data into training/testing sets
-        X_train = X[:-20]
-        X_test = X[-20:]
+        # We'll do an 80/20 split
+        split_80 = int(round(total_rows * 0.8))
+        split_20 = total_rows - split_80
+        print '%.2f - "%s">> Total rows: %s, Split 80: %s, Split 20: %s ...' % (time.time(), light.name, total_rows, split_80, split_20)
+        X_train = X[:-1 * split_20]
+        X_test = X[-1 * split_20:]
 
         # Split the targets into training/testing sets
-        Y_train = Y[:-20]
-        Y_test = Y[-20:]
+        Y_train = Y[:-1 * split_20]
+        Y_test = Y[-1 * split_20:]
 
         # Find the optimal polynomial degree
         final_est = False
@@ -177,6 +185,10 @@ for light in lights:
                 # Predict based on the current minute
                 prediction_minutes = (right_now.hour * 60) + right_now.minute
                 prediction = final_est.predict(prediction_minutes)
+                predicted_state = {
+                    'id': light.light_id,
+                    'on': True if int(round(prediction[0][0])) == 1 else False
+                }
             elif phase_2_condition:
                 # Predict based on the current minute in the week
                 prediction_minutes = (right_now.hour * 60) + right_now.minute
@@ -184,6 +196,13 @@ for light in lights:
                 if right_now_weekday > 0:
                     prediction_minutes = prediction_minutes * right_now_weekday
                 prediction = final_est.predict(prediction_minutes)
+                predicted_state = {
+                    'id': light.light_id,
+                    'on': True if int(round(prediction[0][0])) == 1 else False,
+                    'hue': int(prediction[0][1]),
+                    'bri': int(prediction[0][2]),
+                    'sat': int(prediction[0][3])
+                }
             else:
                 # Predict based on the current minute in the month
                 prediction_minutes = (right_now.hour * 60) + right_now.minute
@@ -193,26 +212,30 @@ for light in lights:
                 if right_now.day > 0:
                     prediction_minutes = prediction_minutes * right_now.day
                 prediction = final_est.predict(prediction_minutes)
+                predicted_state = {
+                    'id': light.light_id,
+                    'on': True if int(round(prediction[0][0])) == 1 else False,
+                    'hue': int(prediction[0][1]),
+                    'bri': int(prediction[0][2]),
+                    'sat': int(prediction[0][3]),
+                    'xy': [ round(prediction[0][4], 4), round(prediction[0][5], 4) ]
+                }
 
             # Features: state, hue, bri, sat, x, y
             confidence = final_est.score(X_test, Y_test) # 1 is perfect prediction
-            predicted_state = {
-                'id': light.light_id,
-                'on': True if int(round(prediction[0][0])) == 1 else False,
-                'hue': int(prediction[0][1]),
-                'bri': int(prediction[0][2]),
-                'sat': int(prediction[0][3]),
-                'xy': [ round(prediction[0][4], 4), round(prediction[0][5], 4) ]
-            }
             state_message = json.dumps(predicted_state)
             print '%.2f - "%s">> Modifying state of light ...' % (time.time(), light.name)
             print '%.2f - "%s">> The time is %s' % (time.time(), light.name, right_now)
             print '%.2f - "%s">> Predicting for current minute %s/%s' % (time.time(), light.name, prediction_minutes, minutes_in_day - 1)
             print '%.2f - "%s">> Predicting state: %s (Confidence: %.2f)' % (time.time(), light.name, 'ON' if predicted_state['on'] else 'OFF', confidence)
-            print '%.2f - "%s">> Predicting hue: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['hue'], confidence)
-            print '%.2f - "%s">> Predicting bri: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['bri'], confidence)
-            print '%.2f - "%s">> Predicting sat: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['sat'], confidence)
-            print '%.2f - "%s">> Predicting xy: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['xy'], confidence)
+            if 'hue' in predicted_state:
+                print '%.2f - "%s">> Predicting hue: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['hue'], confidence)
+            if 'bri' in predicted_state:
+                print '%.2f - "%s">> Predicting bri: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['bri'], confidence)
+            if 'sat' in predicted_state:
+                print '%.2f - "%s">> Predicting sat: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['sat'], confidence)
+            if 'xy' in predicted_state:
+                print '%.2f - "%s">> Predicting xy: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['xy'], confidence)
             # Update the state of our light
             rmq_channel.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE, body=state_message)
 
