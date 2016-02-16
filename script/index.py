@@ -122,8 +122,6 @@ for light in lights:
             # X = Total amount of minutes passed during recorded month (0-n)
             else:
                 eq = (current_hour * 60) + current_minute
-                if day_of_week > 0:
-                    eq = eq * day_of_week
                 if current_day > 0:
                     eq = eq * current_day
                 X.append([eq])
