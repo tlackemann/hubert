@@ -1,33 +1,34 @@
-FROM ubuntu:14.04.3
+FROM gliderlabs/alpine:3.3
 
-# Install necessary packages
-RUN apt-get update && apt-get install -y \
-  build-essential \
-  curl \
-  python-numpy \
-  python-pip \
-  python-scipy \
-  git
-RUN apt-get clean
-RUN rm -rf /var/lib/apt/lists/*
+RUN apk add --update \
+    python \
+    python-dev \
+    py-pip \
+    openssl \
+    build-base
 
-# Install pip
-RUN curl -O https://bootstrap.pypa.io/get-pip.py && python get-pip.py && \
-  rm get-pip.py
+# Install scipy
+RUN echo "@testing http://dl-4.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
+RUN apk add --update py-scipy@testing
+RUN apk add --update py-numpy@testing
 
-# Install cassandra-driver
-RUN pip install cassandra-driver
+# Upgrade pip
+RUN pip install --upgrade pip
 
 # Install scikit-learn
-RUN pip install scikit-learn
+RUN pip install -U scikit-learn
+
+# Install cassandra-driver
+RUN pip install -U cython
+RUN pip install -U cassandra-driver
 
 # Install Hue package
-RUN pip install phue
+RUN pip install -U phue
 
-# Install daemon package
-RUN pip install python-daemon
+# Install pika for RabbitMQ
+RUN pip install -U pika
 
-RUN pip install pika
+RUN rm -rf /var/cache/apk/*
 
 # Setup the application
 RUN mkdir -p /usr/src/app

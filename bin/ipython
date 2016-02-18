@@ -1,0 +1,19 @@
+#!/bin/bash
+ipython_id=`docker ps -a -f name=hubert_ipython_1 --format "{{.ID}}"`
+docker rm $ipython_id
+# Remove cassandra if it exists
+if [ -n "$ipython_id" ]; then
+  echo "Starting iPython Notebook container ..."
+  docker start hubert_ipython_1
+else
+  echo "Building iPython Notebook image ..."
+  docker build -t hubert_ipython:latest ./ipython
+  echo "Creating iPython Notebook container ..."
+  docker run --name hubert_ipython_1 -itd \
+    -p 443:8888 \
+    -v "./ipython/notebooks":/notebooks/hubert \
+    -e "PASSWORD=hubert_data" \
+    hubert_ipython:latest
+
+  docker start hubert_ipython_1
+fi
