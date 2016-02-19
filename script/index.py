@@ -234,7 +234,12 @@ for light in lights:
             if 'xy' in predicted_state:
                 print '%.2f - "%s">> Predicting xy: %s (Confidence: %.2f)' % (time.time(), light.name, predicted_state['xy'], confidence)
             # Update the state of our light
-            rmq_channel.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE, body=state_message)
+            # But only if we're pretty confident
+            if confidence > 0.8:
+                print '%.2f - "%s">> Sending message for processing ...' % (time.time(), light.name)
+                rmq_channel.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE, body=state_message)
+            else:
+                print '%.2f - "%s">> Confidence too low to process' % (time.time(), light.name)
 
         # RSS too high
         else:

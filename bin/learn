@@ -1,2 +1,6 @@
 #!/bin/bash
-docker run -it --link hubert_cassandra_1:cassandra --link hubert_rabbitmq_1:hubert.rabbitmq hubert_learn:latest
+docker run -it \
+  --link hubert_cassandra_1:cassandra \
+  --link hubert_rabbitmq_1:hubert.rabbitmq \
+  --volume "`pwd`/script":/usr/src/app \
+  -- hubert_learn:latest
